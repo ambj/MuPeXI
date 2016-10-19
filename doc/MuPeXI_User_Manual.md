@@ -224,15 +224,16 @@ A full example of an expression file can be found on the MuPeXI webserver [here]
 It should be noted that MuPeXI takes both expression values determined on transcript and gene level, though transcript is preferable. If gene level is used (ENSG…) the `-E gene` option should be used. 
 
 ### References 
-The following references are required for MuPeXI to run: 
-    − Peptide  
-        The peptide reference is a FASTA file containing all peptides of the human proteome. 
-    − cDNA  
-        The cDNA reference is a FASTA file containing all nucleotide sequences of the human proteome.  
-        These reference can be acquired from Ensembles website. The 85 release can be found here.
+The following references are required for MuPeXI to run:
+* Peptide  
+    The peptide reference is a FASTA file containing all peptides of the human proteome.
+* cDNA  
+    The cDNA reference is a FASTA file containing all nucleotide sequences of the human proteome.  
+
+These reference can be acquired from [Ensembles website](http://www.ensembl.org/Homo_sapiens/Info/Index). The 85 release can be found [here](ftp://ftp.ensembl.org/pub/release-85/fasta/homo_sapiens/).
   
-The following reference are optional but preferable: 
-    − Cosmic  
+The following reference are optional but preferable:
+* Cosmic  
         TSV file containing known cancer driver genes. The cancer gene census can be downloaded from the COSMIC website.  
 
 ## Output Files 
