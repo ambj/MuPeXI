@@ -90,7 +90,7 @@ All options can be explored using the usage information with the `-h` option:
         version 2016-08-11
 
         The current version of this program is available from
-        https://bitbucket.org/ambj/mupexi
+        https://github.com/ambj/MuPeXI
 
         MuPeXI.py accepts a VCF file describing somatic mutations as input, and from this 
         derives a set of mutated peptides of specified length(s). These mutated peptides 
@@ -109,7 +109,7 @@ All options can be explored using the usage information with the `-h` option:
         -l, --length            Peptide length, given as single number,             9
                                 range (9-11) or comma separated (9,10,11).
         -e, --expression-file   Expression file, tab separated
-                                ((ENST*/ENSG*) 	 mean)
+                                ((ENST*/ENSG*)   mean)
 
         Optional arguments affecting output files:
         -o, --output-file       Output file name.                                   <VEP-file>.mupexi
@@ -118,24 +118,26 @@ All options can be explored using the usage information with the `-h` option:
                                 to all (.mupexi, .log, .fasta) unless specified 
                                 by -o or -L.
         -L, --log-file          Logfile name.                                       <VCF-file>.log
+        -m, --mismatch-number   Maximum number of mismatches to search for in       4
+                                normal peptide match. 
 
         Other options (these do not take values)
         -f, --make-fasta        Create FASTA file with long peptides 
                                 - mutation in the middle
         -c, --config-file       Path to the config.ini file                         current directory
         -t, --keep-temp         Retain all temporary files
-        -m, --mismatch-only     Print only mismatches in normal peptide sequence 
+        -M, --mismatch-only     Print only mismatches in normal peptide sequence 
                                 and otherwise use dots (...AA.....)
         -w, --webface           Run in webserver mode
         -g, --hg19              Perform liftover HG19 to GRCh38.
-                                Requires local GTAK installation with paths
+                                Requires local picard installation with paths
                                 stated in the config file
         -E, --expression-type   Setting if the expression values in the expression  transcript
-                                files are determined on transcript or gene level
+                                files are determined on transcript or gene level.
+                                (transcript/gene)
         -h, --help              Print this help information
 
         REMEMBER to state references in the config.ini file
-
 
 
 
