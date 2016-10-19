@@ -1,7 +1,10 @@
-# MuPeXI MuPeXI User Manual
+# MuPeXI User Manual
 
-Anne-Mette Bjerregaard
-Center for Biological Sequence Analysis, Department of Systems Biology, Technical University of Denmark, Lyngby, Denmark.
+Anne-Mette Bjerregaard  
+Center for Biological Sequence Analysis  
+Department of Systems Biology  
+Technical University of Denmark  
+Lyngby, Denmark.
 
 October 19, 2016
 
