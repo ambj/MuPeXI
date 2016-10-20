@@ -230,8 +230,11 @@ The following references are required for MuPeXI to run:
 * cDNA  
     The cDNA reference is a FASTA file containing all nucleotide sequences of the human proteome.  
 
-These reference can be acquired from the [Ensembl website](http://www.ensembl.org/Homo_sapiens/Info/Index). The 85 release can be found [here](ftp://ftp.ensembl.org/pub/release-85/fasta/homo_sapiens/).
-  
+These reference can be acquired from the [Ensembl website](http://www.ensembl.org/Homo_sapiens/Info/Index).  
+The Most resent release is found under Gene annotation > Download genes, cDNAs, ncRNA, protein (FASTA) > pep (for peptide reference) and > cdna (for cDNA reference).  
+It should be emphasized that it is of very high importance that the references and VEP match in release version (eg. release-85).
+
+
 The following reference are optional but preferable:
 * Cosmic  
         TSV file containing known cancer driver genes. The cancer gene census can be downloaded from the [COSMIC](http://cancer.sanger.ac.uk/census) website.  
