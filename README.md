@@ -30,7 +30,7 @@ To run MuPeXI the following software and packages must be installed:
 
 #### Required software:
 * [Python 2.7](https://www.python.org/download/releases/2.7/)
-* [netMHCpan 2.8](http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?netMHCpan)
+* [netMHCpan 3.0](http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?netMHCpan)
 * [Varaint Effect Predictor (VEP)](http://www.ensembl.org/info/docs/tools/vep/index.html) 
 
 #### Python modules:
