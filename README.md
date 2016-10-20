@@ -142,7 +142,7 @@ All options can be explored using the usage information with the `-h` option:
 
 
 ## User Manual 
-For detailed information about usage, input and output files, test examples and data preparation read the [MuPeXI User Manual](/doc/MuPeXI_User_Manual.pdf)
+For detailed information about usage, input and output files, test examples and data preparation read the [MuPeXI User Manual](/doc/MuPeXI_User_Manual.md)
 
 
 ## Contact   
