@@ -204,7 +204,7 @@ Compact example of a VCF file:
         chr1    3631978 rs2244942   T   C   .   germline_risk . . . .  
         chr1    3839305 rs1891940   T   C   .   clustered_events;germline_risk  . . . .
 
-A full example of a VCF file can be found on the MuPeXI webserver here. 
+A full example of a VCF file can be found on the MuPeXI webserver [here](http://www.cbs.dtu.dk/services/MuPeXI/example.vcf). 
 
 ### Expression file
 
@@ -219,7 +219,7 @@ The expression files used for testing MuPeXI were generated from raw RNA-seq dat
         ENST00000469289.1   0
         ENST00000607096.1   0
 
-A full example of an expression file can be found on the MuPeXI webserver [here](http://www.cbs.dtu.dk/services/MuPeXI/SRR2673044_Mel38.stats.txt).
+A full example of an expression file can be found on the MuPeXI webserver [here](http://www.cbs.dtu.dk/services/MuPeXI/example_expression.tsv).
 
 It should be noted that MuPeXI takes both expression values determined on transcript and gene level, though transcript is preferable. If gene level is used (ENSG…) the `-E gene` option should be used. 
 

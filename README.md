@@ -6,7 +6,8 @@ MuPeXI - Mutant peptide extractor and Informer
 
 * Authors: Anne-Mette Bjerregaard and Aron C. Eklund 
 * Date: September 2016
-* version: 1.1 
+* Version: 1.1 
+* [Web server](http://www.cbs.dtu.dk/services/MuPeXI/)
 
 
 
