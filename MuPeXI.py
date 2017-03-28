@@ -482,7 +482,7 @@ def build_vep_info(vep_file, webserver):
     # Creating named tuple 
     Mutation_Info = namedtuple('mutation_info', ['gene_id', 'trans_id', 'mutation_consequence','chr', 'pos', 'cdna_pos', 'prot_pos', 'prot_pos_to', 'aa_normal', 'aa_mut', 'codon_normal', 'codon_mut', 'alt_allele', 'symbol'])
     transcript_info = defaultdict(dict)
-    protein_positions = defaultdict(dict)
+    protein_positions = defaultdict(lambda: defaultdict(dict))
 
     non_used_mutation_count, misssense_variant_count, inframe_insertion_count, inframe_deletion_count, frameshift_variant_count = 0, 0, 0 ,0, 0
 
@@ -515,10 +515,11 @@ def build_vep_info(vep_file, webserver):
                 prot_pos, prot_pos_to = line[9].strip(), None
             mutation_id = '{}_{}_{}'.format(chr_, genome_pos, alt_allele)
 
-            # set the default value of the key to be a list and append the transcript id 
-            transcript_info.setdefault(mutation_id,[]).append(transID)
+            # Generate dict of dicts (dependent on both mutation ID and gene ID)
+            # then set the default value of the key to be a list and append the transcript id 
+            transcript_info[mutation_id].setdefault(geneID,[]).append(transID)
             # ad protein position
-            protein_positions[mutation_id][transID] = prot_pos
+            protein_positions[mutation_id][geneID][transID] = prot_pos
             # append information from the line to the list of named tuples - fill tuple 
             vep_info.append(Mutation_Info(geneID, transID, mutation_consequence, chr_, genome_pos, cdna_pos, int(prot_pos), prot_pos_to, aa_normal, aa_mutation, codon_normal, codon_mut, alt_allele, symbol))
 
@@ -1098,11 +1099,11 @@ def write_output_file(peptide_info, expression, net_mhc, unique_alleles, cancer_
                 # Print normal peptide or normal peptide only showing mis matched (...X...XX...)
                 print_normal_peptide = mismatch_snv_normal_peptide_conversion(normal_peptide, peptide_position, peptide_sequence_info.consequence, pep_match_info) if not print_mismatch == None else normal_peptide
                 # Extract transcript IDs including the peptide
-                transcript_ids = extract_transcript_ids(mutation_info.gene_id, transcript_info[mutation_id], proteome_reference, normal_peptide, peptide_sequence_info.consequence)
+                transcript_ids = extract_transcript_ids(mutation_info.gene_id, transcript_info[mutation_id][mutation_info.gene_id], proteome_reference, normal_peptide, peptide_sequence_info.consequence)
                 # Extract protein position
-                protein_positions_extracted = extract_protein_position(transcript_ids, mutation_id, protein_positions)
+                protein_positions_extracted = extract_protein_position(transcript_ids, mutation_id, mutation_info.gene_id, protein_positions)
                 # Extract expression value if file is given 
-                expression_sum = extract_expression_value(expression_file_type, expression, mutation_info.gene_id, webserver, transcript_info[mutation_id], printed_ids)
+                expression_sum = extract_expression_value(expression_file_type, expression, mutation_info.gene_id, webserver, transcript_info[mutation_id][mutation_info.gene_id], printed_ids)
                 # Extract cancer genes if file is given 
                 if not cancer_genes == None:
                     cancer_gene = 'Yes' if mutation_info.symbol in cancer_genes else 'No'
@@ -1240,10 +1241,10 @@ def extract_transcript_ids(gene_id, trans_ids, proteome_reference, normal_peptid
 
 
 
-def extract_protein_position(transcript_ids, mutation_id, protein_positions) :
+def extract_protein_position(transcript_ids, mutation_id, gene_id, protein_positions) :
     protein_positions_extracted = []
     for trans_id in transcript_ids :
-        protein_positions_extracted.append(protein_positions[mutation_id][trans_id])
+        protein_positions_extracted.append(protein_positions[mutation_id][gene_id][trans_id])
 
     return protein_positions_extracted
 
