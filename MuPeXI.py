@@ -94,7 +94,7 @@ def main(args):
     # run netMHCpan
     unique_mutant_peptide_count, peptide_file = write_peptide_file(peptide_info, tmp_dir, input_.webserver, input_.keep_temp, input_.prefix, input_.outdir)
     netMHCpan_runtime, unique_alleles, netMHC_file = run_netMHCpan(input_.HLA_alleles, paths.netMHC, peptide_file, tmp_dir, input_.webserver, input_.keep_temp, input_.prefix, input_.outdir)
-    net_mhc = build_netMCH(netMHC_file, input_.webserver)
+    net_mhc = build_netMHC(netMHC_file, input_.webserver)
 
     # write files 
     output_file = write_output_file(peptide_info, expression, net_mhc, unique_alleles, cancer_genes, tmp_dir, input_.webserver, input_.print_mismatch, allele_fractions, input_.expression_type, transcript_info, reference_peptides, proteome_reference, protein_positions)
@@ -1018,7 +1018,7 @@ def run_netMHCpan(HLA_alleles, netMHCpan3_0, peptide_file, tmp_dir, webserver, k
 
 
 
-def build_netMCH(netMHC_file, webserver):
+def build_netMHC(netMHC_file, webserver):
     print_ifnot_webserver ('\tCreating NetMHCpan file dictionary', webserver)
     net_mhc = defaultdict(dict) # empty dictionary
     NetMHCInfo = namedtuple('NetMHCInfo', ['affinity', 'rank'])
@@ -1225,18 +1225,18 @@ def extract_expression_value(expression_file_type, expression, gene_id, webserve
 
 
 def extract_transcript_ids(gene_id, trans_ids, proteome_reference, normal_peptide, consequence) :
-    peptipe_trans_ids = []
+    peptide_trans_ids = []
 
     # Find transcript id's including the entire peptide.
     if not consequence == 'M' :
-        peptipe_trans_ids = trans_ids
+        peptide_trans_ids = trans_ids
     else:
         for transID in trans_ids:
             aa_sequence = proteome_reference[gene_id][transID]
             if normal_peptide in aa_sequence :
-                peptipe_trans_ids.append(transID)
+                peptide_trans_ids.append(transID)
 
-    return peptipe_trans_ids
+    return peptide_trans_ids
 
 
 
@@ -1422,7 +1422,7 @@ def webserver_print_output(webserver, www_tmp_dir, output, logfile, fasta_file_n
 def usage():
     usage =   """
         MuPeXI - Mutant Peptide Extractor and Informer
-        version 2016-08-11
+        version 2017-03-28
 
         The current version of this program is available from
         https://github.com/ambj/MuPeXI
@@ -1445,6 +1445,9 @@ def usage():
                                 range (9-11) or comma separated (9,10,11).
         -e, --expression-file   Expression file, tab separated
                                 ((ENST*/ENSG*) \t mean)
+        -E, --expression-type   Are the expression values in the expression         transcript
+                                files determined on transcript or gene level.
+                                (transcript/gene)
 
         Optional arguments affecting output files:
         -o, --output-file       Output file name.                                   <VEP-file>.mupexi
@@ -1467,9 +1470,6 @@ def usage():
         -g, --hg19              Perform liftover HG19 to GRCh38.
                                 Requires local picard installation with paths
                                 stated in the config file
-        -E, --expression-type   Setting if the expression values in the expression  transcript
-                                files are determined on transcript or gene level.
-                                (transcript/gene)
         -h, --help              Print this help information
 
         REMEMBER to state references in the config.ini file
