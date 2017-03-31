@@ -40,7 +40,7 @@ def main(args):
 
     # Read in data 
     print_ifnot_webserver('\nReading in data', input_.webserver)
-    expression = build_expression(input_.expression_file, input_.webserver)
+    expression = build_expression(input_.expression_file, input_.webserver, input_.expression_type)
     proteome_reference, sequence_count = build_proteome_reference(paths.proteome_ref_file, input_.webserver)
     genome_reference = build_genome_reference(paths.genome_ref_file, input_.webserver)
     cancer_genes = build_cancer_genes(paths.cosmic_file, input_.webserver)
@@ -280,7 +280,7 @@ def build_genome_reference(genome_ref_file, webserver):
 
 
 
-def build_expression(expression_file, webserver):
+def build_expression(expression_file, webserver, expression_type):
     if not expression_file == None :
         print_ifnot_webserver('\tCreating expression file dictionary', webserver)
         expression = defaultdict(dict) # empty dictionary
@@ -289,18 +289,29 @@ def build_expression(expression_file, webserver):
             for line in f.readlines():
                 line = line.split()
                 if not line[0] == 'target_id':
+                    check_expression_file_type(expression_type, line)
                     # save line information
                     if '.' in line[0] : # example: ENST00000415118.3
-                        trans_id = line[0].split('.')[0]
+                        ensembl_id = line[0].split('.')[0]
                     else: # example: ENST00000415118
-                        trans_id = line[0]
+                        ensembl_id = line[0]
                     mean = line[1]
                     # fill dictionary 
-                    expression[trans_id] = mean
+                    expression[ensembl_id] = mean
     else :
         expression = None
 
     return expression
+
+
+
+def check_expression_file_type(expression_type, line):
+    if expression_type == 'gene' :
+        if 'ENST' in line[0]:
+            usage(); sys.exit('ERROR:\tEnsembl transcript id detected: {}\n\tWhile expression type option "gene" was used\n'.format(line[0]))
+    if expression_type == 'transcript' :
+        if 'ENSG' in line[0]:
+            usage(); sys.exit('ERROR:\tEnsembl gene id detected: {}\n\tWhile expression type option "transcript" was used\n'.format(line[0]))
 
 
 
