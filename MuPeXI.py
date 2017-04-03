@@ -40,7 +40,7 @@ def main(args):
 
     # Read in data 
     print_ifnot_webserver('\nReading in data', input_.webserver)
-    expression = build_expression(input_.expression_file, input_.webserver)
+    expression = build_expression(input_.expression_file, input_.webserver, input_.expression_type)
     proteome_reference, sequence_count = build_proteome_reference(paths.proteome_ref_file, input_.webserver)
     genome_reference = build_genome_reference(paths.genome_ref_file, input_.webserver)
     cancer_genes = build_cancer_genes(paths.cosmic_file, input_.webserver)
@@ -58,7 +58,7 @@ def main(args):
     vcf_sorted_file = create_vep_compatible_vcf(vcf_file, input_.webserver, tmp_dir, input_.hg19)
     allele_fractions = extract_allele_frequency(vcf_sorted_file, input_.webserver, variant_caller)
     vep_file = run_vep(vcf_sorted_file, input_.webserver, tmp_dir, paths.vep_path, paths.vep_dir, input_.keep_temp, input_.prefix, input_.outdir)
-    vep_info, vep_counters, transcript_info = build_vep_info(vep_file, input_.webserver)
+    vep_info, vep_counters, transcript_info, protein_positions = build_vep_info(vep_file, input_.webserver)
 
     end_time_vep = datetime.now()
 
@@ -94,10 +94,10 @@ def main(args):
     # run netMHCpan
     unique_mutant_peptide_count, peptide_file = write_peptide_file(peptide_info, tmp_dir, input_.webserver, input_.keep_temp, input_.prefix, input_.outdir)
     netMHCpan_runtime, unique_alleles, netMHC_file = run_netMHCpan(input_.HLA_alleles, paths.netMHC, peptide_file, tmp_dir, input_.webserver, input_.keep_temp, input_.prefix, input_.outdir)
-    net_mhc = build_netMCH(netMHC_file, input_.webserver)
+    net_mhc = build_netMHC(netMHC_file, input_.webserver)
 
     # write files 
-    output_file = write_output_file(peptide_info, expression, net_mhc, unique_alleles, cancer_genes, tmp_dir, input_.webserver, input_.print_mismatch, allele_fractions, input_.expression_type, transcript_info, reference_peptides)
+    output_file = write_output_file(peptide_info, expression, net_mhc, unique_alleles, cancer_genes, tmp_dir, input_.webserver, input_.print_mismatch, allele_fractions, input_.expression_type, transcript_info, reference_peptides, proteome_reference, protein_positions)
     log_file = write_log_file(sys.argv, peptide_length, sequence_count, reference_peptide_counters, vep_counters, peptide_counters, start_time_mupex, start_time_mupei, start_time, end_time_mupex, input_.HLA_alleles, netMHCpan_runtime, unique_mutant_peptide_count, unique_alleles, tmp_dir, input_.webserver)
 
     # clean up
@@ -280,7 +280,7 @@ def build_genome_reference(genome_ref_file, webserver):
 
 
 
-def build_expression(expression_file, webserver):
+def build_expression(expression_file, webserver, expression_type):
     if not expression_file == None :
         print_ifnot_webserver('\tCreating expression file dictionary', webserver)
         expression = defaultdict(dict) # empty dictionary
@@ -289,18 +289,29 @@ def build_expression(expression_file, webserver):
             for line in f.readlines():
                 line = line.split()
                 if not line[0] == 'target_id':
+                    check_expression_file_type(expression_type, line)
                     # save line information
                     if '.' in line[0] : # example: ENST00000415118.3
-                        trans_id = line[0].split('.')[0]
+                        ensembl_id = line[0].split('.')[0]
                     else: # example: ENST00000415118
-                        trans_id = line[0]
+                        ensembl_id = line[0]
                     mean = line[1]
                     # fill dictionary 
-                    expression[trans_id] = mean
+                    expression[ensembl_id] = mean
     else :
         expression = None
 
     return expression
+
+
+
+def check_expression_file_type(expression_type, line):
+    if expression_type == 'gene' :
+        if 'ENST' in line[0]:
+            usage(); sys.exit('ERROR:\tEnsembl transcript id detected: {}\n\tWhile expression type option "gene" was used\n'.format(line[0]))
+    if expression_type == 'transcript' :
+        if 'ENSG' in line[0]:
+            usage(); sys.exit('ERROR:\tEnsembl gene id detected: {}\n\tWhile expression type option "transcript" was used\n'.format(line[0]))
 
 
 
@@ -482,6 +493,7 @@ def build_vep_info(vep_file, webserver):
     # Creating named tuple 
     Mutation_Info = namedtuple('mutation_info', ['gene_id', 'trans_id', 'mutation_consequence','chr', 'pos', 'cdna_pos', 'prot_pos', 'prot_pos_to', 'aa_normal', 'aa_mut', 'codon_normal', 'codon_mut', 'alt_allele', 'symbol'])
     transcript_info = defaultdict(dict)
+    protein_positions = defaultdict(lambda: defaultdict(dict))
 
     non_used_mutation_count, misssense_variant_count, inframe_insertion_count, inframe_deletion_count, frameshift_variant_count = 0, 0, 0 ,0, 0
 
@@ -514,8 +526,11 @@ def build_vep_info(vep_file, webserver):
                 prot_pos, prot_pos_to = line[9].strip(), None
             mutation_id = '{}_{}_{}'.format(chr_, genome_pos, alt_allele)
 
-            # set the default value of the key to be a list and append the transcript id 
-            transcript_info.setdefault(mutation_id,[]).append(transID)
+            # Generate dict of dicts (dependent on both mutation ID and gene ID)
+            # then set the default value of the key to be a list and append the transcript id 
+            transcript_info[mutation_id].setdefault(geneID,[]).append(transID)
+            # ad protein position
+            protein_positions[mutation_id][geneID][transID] = prot_pos
             # append information from the line to the list of named tuples - fill tuple 
             vep_info.append(Mutation_Info(geneID, transID, mutation_consequence, chr_, genome_pos, cdna_pos, int(prot_pos), prot_pos_to, aa_normal, aa_mutation, codon_normal, codon_mut, alt_allele, symbol))
 
@@ -543,7 +558,7 @@ def build_vep_info(vep_file, webserver):
     VEPCounters = namedtuple('vep_counters', ['non_used_mutation_count', 'misssense_variant_count', 'gene_count', 'transcript_Count', 'inframe_insertion_count', 'inframe_deletion_count', 'frameshift_variant_count'])
     vep_counters = VEPCounters(non_used_mutation_count, misssense_variant_count, gene_count, transcript_Count, inframe_insertion_count, inframe_deletion_count, frameshift_variant_count)
 
-    return vep_info, vep_counters, transcript_info
+    return vep_info, vep_counters, transcript_info, protein_positions
 
 
 
@@ -1015,7 +1030,7 @@ def run_netMHCpan(HLA_alleles, netMHCpan3_0, peptide_file, tmp_dir, webserver, k
 
 
 
-def build_netMCH(netMHC_file, webserver):
+def build_netMHC(netMHC_file, webserver):
     print_ifnot_webserver ('\tCreating NetMHCpan file dictionary', webserver)
     net_mhc = defaultdict(dict) # empty dictionary
     NetMHCInfo = namedtuple('NetMHCInfo', ['affinity', 'rank'])
@@ -1040,7 +1055,7 @@ def build_netMCH(netMHC_file, webserver):
 
 
 
-def write_output_file(peptide_info, expression, net_mhc, unique_alleles, cancer_genes, tmp_dir, webserver, print_mismatch, allele_fractions, expression_file_type, transcript_info, reference_peptides):
+def write_output_file(peptide_info, expression, net_mhc, unique_alleles, cancer_genes, tmp_dir, webserver, print_mismatch, allele_fractions, expression_file_type, transcript_info, reference_peptides, proteome_reference, protein_positions):
     print_ifnot_webserver('\tWriting output file', webserver)
     printed_ids = set()
     row = 0
@@ -1094,8 +1109,12 @@ def write_output_file(peptide_info, expression, net_mhc, unique_alleles, cancer_
                 mismatches = pep_match_info.mismatch if not pep_match_info == None else 1
                 # Print normal peptide or normal peptide only showing mis matched (...X...XX...)
                 print_normal_peptide = mismatch_snv_normal_peptide_conversion(normal_peptide, peptide_position, peptide_sequence_info.consequence, pep_match_info) if not print_mismatch == None else normal_peptide
+                # Extract transcript IDs including the peptide
+                transcript_ids = extract_transcript_ids(mutation_info.gene_id, transcript_info[mutation_id][mutation_info.gene_id], proteome_reference, normal_peptide, peptide_sequence_info.consequence)
+                # Extract protein position
+                protein_positions_extracted = extract_protein_position(transcript_ids, mutation_id, mutation_info.gene_id, protein_positions)
                 # Extract expression value if file is given 
-                expression_sum = extract_expression_value(expression_file_type, expression, mutation_info.gene_id, webserver, transcript_info[mutation_id], printed_ids)
+                expression_sum = extract_expression_value(expression_file_type, expression, mutation_info.gene_id, webserver, transcript_info[mutation_id][mutation_info.gene_id], printed_ids)
                 # Extract cancer genes if file is given 
                 if not cancer_genes == None:
                     cancer_gene = 'Yes' if mutation_info.symbol in cancer_genes else 'No'
@@ -1107,6 +1126,7 @@ def write_output_file(peptide_info, expression, net_mhc, unique_alleles, cancer_
                 # calculate priority score 
                 priority_score, scores = score_creation(normal_netmhc_info.rank, mutant_netmhc_info.rank, expression_sum, mutation_info.symbol, mismatches, allele_frequency, reference_peptides, mutant_petide)
 
+
                 # Add row to data frame 
                 df.loc[row] = [
                 hla, 
@@ -1117,14 +1137,14 @@ def write_output_file(peptide_info, expression, net_mhc, unique_alleles, cancer_
                 mutant_netmhc_info.affinity, 
                 mutant_netmhc_info.rank, 
                 mutation_info.gene_id, 
-                ','.join(transcript_info[mutation_id]), 
+                ','.join(transcript_ids), 
                 '{}/{}'.format(mutation_info.aa_normal, mutation_info.aa_mut), 
                 '-' if allele_fractions == None else allele_frequency, 
                 mismatches, 
                 peptide_position, 
                 mutation_info.chr, 
                 mutation_info.pos, 
-                mutation_info.prot_pos, 
+                ','.join(protein_positions_extracted), 
                 peptide_sequence_info.consequence, 
                 '-' if mutation_info.symbol == None else mutation_info.symbol, 
                 cancer_gene,
@@ -1142,7 +1162,6 @@ def write_output_file(peptide_info, expression, net_mhc, unique_alleles, cancer_
     df_sorted = df.sort(columns = ('priority_Score'), ascending=False)
     df_sorted.loc[:,'priority_Score'] = df_sorted.priority_Score.multiply(100).round().astype(int)
     df_sorted.loc[:,'Mismatches'] = df_sorted.Mismatches.astype(int)
-    df_sorted.loc[:,'Protein_position'] = df_sorted.Protein_position.astype(int)
 
     # Print data frame to intermediate file 
     df_file = NamedTemporaryFile(delete = False, dir = tmp_dir)
@@ -1214,6 +1233,31 @@ def extract_expression_value(expression_file_type, expression, gene_id, webserve
                 expression_sum = expression[gene_id]
 
     return expression_sum
+
+
+
+def extract_transcript_ids(gene_id, trans_ids, proteome_reference, normal_peptide, consequence) :
+    peptide_trans_ids = []
+
+    # Find transcript id's including the entire peptide.
+    if not consequence == 'M' :
+        peptide_trans_ids = trans_ids
+    else:
+        for transID in trans_ids:
+            aa_sequence = proteome_reference[gene_id][transID]
+            if normal_peptide in aa_sequence :
+                peptide_trans_ids.append(transID)
+
+    return peptide_trans_ids
+
+
+
+def extract_protein_position(transcript_ids, mutation_id, gene_id, protein_positions) :
+    protein_positions_extracted = []
+    for trans_id in transcript_ids :
+        protein_positions_extracted.append(protein_positions[mutation_id][gene_id][trans_id])
+
+    return protein_positions_extracted
 
 
 
@@ -1390,7 +1434,7 @@ def webserver_print_output(webserver, www_tmp_dir, output, logfile, fasta_file_n
 def usage():
     usage =   """
         MuPeXI - Mutant Peptide Extractor and Informer
-        version 2016-08-11
+        version 2017-03-28
 
         The current version of this program is available from
         https://github.com/ambj/MuPeXI
@@ -1413,6 +1457,9 @@ def usage():
                                 range (9-11) or comma separated (9,10,11).
         -e, --expression-file   Expression file, tab separated
                                 ((ENST*/ENSG*) \t mean)
+        -E, --expression-type   Are the expression values in the expression         transcript
+                                files determined on transcript or gene level.
+                                (transcript/gene)
 
         Optional arguments affecting output files:
         -o, --output-file       Output file name.                                   <VEP-file>.mupexi
@@ -1435,9 +1482,6 @@ def usage():
         -g, --hg19              Perform liftover HG19 to GRCh38.
                                 Requires local picard installation with paths
                                 stated in the config file
-        -E, --expression-type   Setting if the expression values in the expression  transcript
-                                files are determined on transcript or gene level.
-                                (transcript/gene)
         -h, --help              Print this help information
 
         REMEMBER to state references in the config.ini file

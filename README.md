@@ -26,15 +26,16 @@ MuPeXI.py extracts peptides of user-defined lengths around missense variant muta
 
 ## Dependencies  
 
+MuPeXI currently runs only on x86_64 machines running Linux or Darwin.
 
 To run MuPeXI the following software and packages must be installed:
 
 #### Required software:
 * [Python 2.7](https://www.python.org/download/releases/2.7/)
-* [netMHCpan 3.0](http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?netMHCpan)
-* [Varaint Effect Predictor (VEP)](http://www.ensembl.org/info/docs/tools/vep/index.html) 
+* [NetMHCpan 3.0](http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?netMHCpan)
+* [Variant Effect Predictor (VEP)](http://www.ensembl.org/info/docs/tools/vep/index.html) 
 
-#### Python modules:
+#### Required Python modules:
 * [Biopython](http://biopython.org/wiki/Download)
 * [numpy](http://www.numpy.org/)
 * [pandas](http://pandas.pydata.org/)
@@ -48,7 +49,7 @@ These packages are included if downloading python through [Anaconda](https://www
 
 
 1. Install all software listed above. 
-2. Install Biopython, pandas and nympy with the following command:
+2. Install Biopython, pandas and numpy with the following command:
 
         pip install biopython
         pip install numpy
@@ -59,16 +60,16 @@ These packages are included if downloading python through [Anaconda](https://www
 
         git clone https://github.com/ambj/MuPeXI.git
 
-4. If not already on your system, reference files from GRCh38 should be obtained. These include cDNA, peptide and cosmic references, look under references in the user manual for a detailed description.
+4. If not already on your system, reference files from GRCh38 should be obtained. These include cDNA, peptide and COSMIC references; see the References section in the user manual for a detailed description.
 
-5. Fill the config.ini file  
-    * State the full path to netMHCpan 3.0 and VEP.
-    * State the full path to the reference files:
+5. Fill in the config.ini file  
+    * Provide the full path to NetMHCpan 3.0 and VEP.
+    * Provide the full path to the reference files:
         - cDNA
         - peptide
-        - cosmic
+        - COSMIC
 
-   Additional peptide references and liftover paths can be stated in the config.ini file, see the user manual for detailed information. Instructions on how to fill the config.ini file is found within the file. `config.ini` is automatically detected in the same directory as `MuPeXI.py` script but can also be placed elsewhere and referred to by the `-c` option. 
+   Additional peptide references and liftover paths can be provided in the config.ini file; see the user manual for detailed information. Instructions on how to fill in the config.ini file are found within the file. `config.ini` is automatically detected in the same directory as `MuPeXI.py` script but can also be placed elsewhere and referred to by the `-c` option. 
 
 
 
