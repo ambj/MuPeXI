@@ -1,30 +1,30 @@
-# MuPeXI #
-
-MuPeXI (Mutant Peptide eXtractor and Informer) 
+# MuPeXI: Mutant Peptide eXtractor and Informer #
 
 Given a list of somatic mutations (VCF file) as input, MuPeXI returns a table containing
 all mutated peptides (neo-peptides) of user-defined lengths, along with several pieces
 of information relevant for identifying which of these neo-peptides are likely to serve as
-neo-epitopes. (see the flowchart at the bottom of this page)
+neo-epitopes. 
 
-Authors: Anne-Mette Bjerregaard and Aron C. Eklund 
+#### Authors: 
+Anne-Mette Bjerregaard and Aron C. Eklund 
 
-License: To be determined, but certainly free for academic use.
+#### License: 
+To be determined, but certainly free for academic use.
 
-Citation:  
+#### Citation:
 Bjerregaard AM, Nielsen M, Hadrup SR, Szallasi Z, Eklund AC. (2017)  
 MuPeXI: Prediction of neo-epitopes from tumor sequencing data.  
 *Cancer Immunol Immunother*. To appear.
 
+#### Web server:
 For limited data, MuPeXI can be run on our
 [web server](http://www.cbs.dtu.dk/services/MuPeXI/)
 
 
-## Dependencies  
+## Dependencies
 
+#### Hardware:
 MuPeXI currently runs only on x86_64 machines running Linux or Darwin.
-
-To run MuPeXI the following software and packages must be installed:
 
 #### Required software:
 * [Python 2.7](https://www.python.org/download/releases/2.7/)
@@ -36,10 +36,10 @@ To run MuPeXI the following software and packages must be installed:
 * [numpy](http://www.numpy.org/)
 * [pandas](http://pandas.pydata.org/)
 
-Note: These modules are already included if using python through 
+Note: These modules are already included if using Python through
 [Anaconda](https://www.continuum.io/downloads).
 
-#### Required for liftover from HG19
+#### Optional software, required only for liftover from HG19
 * [Picard tools](https://broadinstitute.github.io/picard/)
 * [Java 8](https://java.com/en/download/help/linux_x64rpm_install.xml)
 
