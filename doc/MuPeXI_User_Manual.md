@@ -85,10 +85,10 @@ Anaconda it should not be necessary to do the second step of the installation gu
 include cDNA, peptide and cosmic references, look under References (below)
 for a detailed description.
 
-5. Fill the config.ini file  
-    Instructions on how to fill the file is found within the file. The `config.ini` file
-    is automatically detected in the same directory as `MuPeXI.py` script but can also be
-    placed elsewhere and referred to by the `-c` option.
+5. Fill in the config.ini file  
+    Instructions on how to fill in the file are found within the file. The `config.ini` file
+    is automatically detected in the same directory as `MuPeXI.py` script but can also be
+    placed elsewhere and referred to by the `-c` option.
 
     State the path to netMHCpan 3.0 and VEP in the config.ini file.
 
@@ -105,7 +105,7 @@ for a detailed description.
     references used (peptide and cDNA).  E.g. in the example above is used version/release
     85 of GRCh38. 
     The path to reference files should also be stated in the config.ini file, together
-    with FULL path to the small C script named “pepmatch_db” downloaded with MuPeXI. 
+    with FULL path to the small C script named "pepmatch_db" downloaded with MuPeXI. 
     All reference peptides of the defined length, extracted from the proteome reference,
     can be defined as a file in the config.ini file. This will save time, avoiding
     chop-up of the proteome reference for each run. As many files as peptides length
@@ -211,7 +211,7 @@ All options can be explored using the usage information with the `-h` option:
 ## Input Files 
 
 MuPeXI accepts a VCF file of somatic mutation calls optimally obtained from either MuTect
-or MuTect2. The VCF files do not need to be modified; the “raw” output VCF file can
+or MuTect2. The VCF files do not need to be modified; the "raw" output VCF file can
 be put directly into MuPeXI. 
 
 ### VCF file 
@@ -254,7 +254,7 @@ A full example of an expression file can be found on the MuPeXI webserver
 [here](http://www.cbs.dtu.dk/services/MuPeXI/example_expression.tsv).
 
 It should be noted that MuPeXI takes both expression values determined on transcript and
-gene level, though transcript is preferable. If gene level is used (ENSG...) the `-E gene`
+gene level, though transcript is preferable. If gene level is used (ENSG...) the `-E gene`
 option should be used. 
 
 ### References 
@@ -297,30 +297,30 @@ The prediction output (.mupexi) for each peptide pair consists of the following 
 
 | Column Name           | Description |
 | -----------           | ----------- |
-| HLA allele            | Allele name |
-| Normal peptide        | Peptide from reference corresponding to the mutant peptide. |
-| Normal MHC affinity   | Predicted binding affinity of normal peptide in nanoMolar units. |
+| HLA allele            | Allele name |
+| Normal peptide        | Peptide from reference corresponding to the mutant peptide. |
+| Normal MHC affinity   | Predicted binding affinity of normal peptide in nanoMolar units. |
 | Normal MHC % rank     | %Rank of prediction score for nomal peptides. |
-| Mutant peptide        | The extracted mutant peptide. |
-| Mutant MHC affinity   | Predicted binding affinity of mutant peptide in nanoMolar units. |
-| Mutant MHC % rank     | %Rank of prediction score for mutant peptides. |
-| Gene ID               | Ensembl gene ID |
-| Transcript ID         | Ensembl transcript ID |
-| Amino acid change     | Amino acid change annotated in VEP file. |
-| Allele Frequency      | Genomic allele frequency detected by MuTect2. |
-| Mismatches            | Mismatches between normal and mutant peptide. |
-| Peptide position      | Position of amino acid change in the peptide. Can be a range in the case of insertions and frameshifts. |
-| Chr                   | Chromosome position annotated in the VEP file. |
-| Genomic position      | Genome nucleotide position annotated in the VEP file. |
-| Protein position      | Amino acid position annotated in the VEP file. |
-| Mutation cons.        | The consequence annotated in the VEP file translated into single letter abbreviations: M; Missense variant, I; In-frame insertion, D; In-frame deletion, F; Frameshift variant |
-| Gene symbol           | HUGO symbol corresponding to the Ensembl transcript id. |
-| Cancer driver gene    | Yes if the HUGO symbol is in the cosmic reference list, No if it is not. |
-| Expression Level      | Expression of the transcript which the mutant peptide was extracted from. |
-| Mutant affinity score | Calculated binding affinity score of the mutant peptide, based on a negative logistic function of the mutant MHC %Rank score. This is used to calculate the final prioritization score. |
-| Normal affinity score | Calculated binding affinity score of the normal peptide, based on a positive logistic function of the normal MHC %Rank score. This is used to calculate the final prioritization score. |
-| Expression score      | Calculated Expression score of the transcript expression level. This is used to calculate the final prioritization score. |
-| Priority score        | Calculated prioritization dependent on HLA binding, gene expression, normal and mutant peptide binding ratio and allele frequency. |
+| Mutant peptide        | The extracted mutant peptide. |
+| Mutant MHC affinity   | Predicted binding affinity of mutant peptide in nanoMolar units. |
+| Mutant MHC % rank     | %Rank of prediction score for mutant peptides. |
+| Gene ID               | Ensembl gene ID |
+| Transcript ID         | Ensembl transcript ID |
+| Amino acid change     | Amino acid change annotated in VEP file. |
+| Allele Frequency      | Genomic allele frequency detected by MuTect2. |
+| Mismatches            | Mismatches between normal and mutant peptide. |
+| Peptide position      | Position of amino acid change in the peptide. Can be a range in the case of insertions and frameshifts. |
+| Chr                   | Chromosome position annotated in the VEP file. |
+| Genomic position      | Genome nucleotide position annotated in the VEP file. |
+| Protein position      | Amino acid position annotated in the VEP file. |
+| Mutation cons.        | The consequence annotated in the VEP file translated into single letter abbreviations: M; Missense variant, I; In-frame insertion, D; In-frame deletion, F; Frameshift variant |
+| Gene symbol           | HUGO symbol corresponding to the Ensembl transcript id. |
+| Cancer driver gene    | Yes if the HUGO symbol is in the cosmic reference list, No if it is not. |
+| Expression Level      | Expression of the transcript which the mutant peptide was extracted from. |
+| Mutant affinity score | Calculated binding affinity score of the mutant peptide, based on a negative logistic function of the mutant MHC %Rank score. This is used to calculate the final prioritization score. |
+| Normal affinity score | Calculated binding affinity score of the normal peptide, based on a positive logistic function of the normal MHC %Rank score. This is used to calculate the final prioritization score. |
+| Expression score      | Calculated Expression score of the transcript expression level. This is used to calculate the final prioritization score. |
+| Priority score        | Calculated prioritization dependent on HLA binding, gene expression, normal and mutant peptide binding ratio and allele frequency. |
 
 NetMHCpan output:
 %Rank of prediction score to a set of 200.000 random natural 9mer peptides. For more
@@ -333,15 +333,15 @@ information go to NetMHCpan
 
 To run the provided test files with MuPeXI the following command can be run: 
 
-        path/to/MuPeXI.py –v test.vcf -c path/to/config.ini –e expression_test.tsv
+        path/to/MuPeXI.py -v test.vcf -c path/to/config.ini -e expression_test.tsv
 
 For additional fasta file output:
 
-        path/to/MuPeXI.py –v test.vcf -c path/to/config.ini –e expression_test.tsv -f
+        path/to/MuPeXI.py -v test.vcf -c path/to/config.ini -e expression_test.tsv -f
 
 Print only the mismatch amino acid for the normal peptide:
 
-        path/to/MuPeXI.py –v test.vcf -c path/to/config.ini –e expression_test.tsv -m
+        path/to/MuPeXI.py -v test.vcf -c path/to/config.ini -e expression_test.tsv -m
 
 ## Data preparation
 
