@@ -12,9 +12,11 @@ Anne-Mette Bjerregaard and Aron C. Eklund
 To be determined, but certainly free for academic use.
 
 #### Citation:
-Bjerregaard AM, Nielsen M, Hadrup SR, Szallasi Z, Eklund AC. (2017)  
+Bjerregaard AM, Nielsen M, Hadrup SR, Szallasi Z, Eklund AC.  
 MuPeXI: Prediction of neo-epitopes from tumor sequencing data.  
-*Cancer Immunol Immunother*. To appear.
+Cancer Immunol Immunother. 2017 Apr 20. doi: 10.1007/s00262-017-2001-3. [Epub ahead of print]  
+PubMed ID: [28429069](https://www.ncbi.nlm.nih.gov/pubmed/28429069)  
+You can read the paper here: http://rdcu.be/rwVP
 
 #### Web server:
 For limited data, MuPeXI can be run on our
