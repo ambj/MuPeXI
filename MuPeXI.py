@@ -1159,7 +1159,7 @@ def write_output_file(peptide_info, expression, net_mhc, unique_alleles, cancer_
 
     # Sort, round up prioritization score
     print_ifnot_webserver('\tSorting output file', webserver)
-    df_sorted = df.sort(columns = ('priority_Score'), ascending=False)
+    df_sorted = df.sort_values('priority_Score', ascending=False)
     df_sorted.loc[:,'priority_Score'] = df_sorted.priority_Score.multiply(100).round().astype(int)
     df_sorted.loc[:,'Mismatches'] = df_sorted.Mismatches.astype(int)
 
