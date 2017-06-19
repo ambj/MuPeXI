@@ -187,12 +187,13 @@ def check_vcf_file(vcf_file, liftover, assembly, webserver):
         if not first_line.startswith('##fileformat=VCF'):
             usage(); sys.exit('ERROR: {} file is not a VCF file\n'.format(vcf_file))
         for line in f.readlines():
-            if '##reference' in line:
-                if 'GRCh37' in line or 'hg19' in line or 'HG19' in line:
-                    if liftover == None and assembly == "GRCh38":
-                        usage(); sys.exit('ERROR: The VCF file is aligned to HG19 / GRCh37\nINFO: {}\nINFO: Please run NGS analysis aligning to GRCh38, use the hg19 liftover option (-g/--hg19), or the GRCh37 prediction option (-a/ --assembly GRCh37)\n'.format(line.strip()))
-                    else :
-                        continue
+            if not Webserver == None:
+                if '##reference' in line:
+                    if 'GRCh37' in line or 'hg19' in line or 'HG19' in line:
+                        if liftover == None and assembly == "GRCh38":
+                            usage(); sys.exit('ERROR: The VCF file is aligned to HG19 / GRCh37\nINFO: {}\nINFO: Please run NGS analysis aligning to GRCh38, use the hg19 liftover option (-g/--hg19), or the GRCh37 prediction option (-a/ --assembly GRCh37)\n'.format(line.strip()))
+                        else :
+                            continue
             if '#CHROM' in line:
                 break
             elif not line.startswith('##'):
