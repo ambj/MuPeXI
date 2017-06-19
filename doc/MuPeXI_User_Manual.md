@@ -188,6 +188,9 @@ All options can be explored using the usage information with the `-h` option:
         -m, --mismatch-number   Maximum number of mismatches to search for in       4
                                 normal peptide match.
         -a, --assembly          The assembly version to run VEP.                    GRCh38
+                
+        Optional arguments affecting computational process:
+        -F, --fork              Number of processors running VEP.                   1
 
         Other options (these do not take values)
         -f, --make-fasta        Create FASTA file with long peptides 

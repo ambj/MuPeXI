@@ -57,7 +57,7 @@ def main(args):
     vcf_file = liftover_hg19(input_.liftover, input_.webserver, input_.vcf_file, input_.keep_temp, input_.outdir, input_.prefix, tmp_dir, input_.config)
     vcf_sorted_file = create_vep_compatible_vcf(vcf_file, input_.webserver, tmp_dir, input_.liftover)
     allele_fractions = extract_allele_frequency(vcf_sorted_file, input_.webserver, variant_caller)
-    vep_file = run_vep(vcf_sorted_file, input_.webserver, tmp_dir, paths.vep_path, paths.vep_dir, input_.keep_temp, input_.prefix, input_.outdir, input_.assembly)
+    vep_file = run_vep(vcf_sorted_file, input_.webserver, tmp_dir, paths.vep_path, paths.vep_dir, input_.keep_temp, input_.prefix, input_.outdir, input_.assembly, input_.fork)
     vep_info, vep_counters, transcript_info, protein_positions = build_vep_info(vep_file, input_.webserver)
 
     end_time_vep = datetime.now()
@@ -412,11 +412,11 @@ def liftover_hg19(liftover, webserver, vcf_file, keep_tmp, outdir, file_prefix, 
 
 
 
-def create_vep_compatible_vcf(vcf_file, webserver, tmp_dir, hg19):
+def create_vep_compatible_vcf(vcf_file, webserver, tmp_dir, liftover):
     print_ifnot_webserver('\tChange VCF to the VEP compatible', webserver)
         # remove chr and 0 so only integers are left, (chromosome: 1, 2, 3 instaed og chr01, chr02, chr03)
         # only PASS lines are used 
-    vcf_file_name = vcf_file if hg19 == None else vcf_file.name
+    vcf_file_name = vcf_file if liftover == None else vcf_file.name
     vcf_sorted_file = NamedTemporaryFile(delete = False, dir = tmp_dir)
     p1 = subprocess.Popen(['awk', '{gsub(/^chr/,"");gsub(/^0/,"");print}', vcf_file_name], stdout = subprocess.PIPE)
     p2 = subprocess.Popen(['grep', '-E', '#|PASS'], stdin = p1.stdout, stdout = vcf_sorted_file)
@@ -461,12 +461,12 @@ def extract_allele_frequency(vcf_sorted_file, webserver, variant_caller):
 
 
 
-def run_vep(vcf_sorted_file, webserver, tmp_dir, vep_path, vep_dir, keep_tmp, file_prefix, outdir, assembly):
+def run_vep(vcf_sorted_file, webserver, tmp_dir, vep_path, vep_dir, keep_tmp, file_prefix, outdir, assembly, fork):
     print_ifnot_webserver('\tRunning VEP', webserver)
     vep_file = NamedTemporaryFile(delete = False, dir = tmp_dir)
 
     p1 = subprocess.Popen([vep_path, 
-        '-fork', '5', 
+        '-fork', fork, 
         '--offline', 
         '--quiet', 
         '--assembly', assembly, 
@@ -1471,6 +1471,9 @@ def usage():
         -m, --mismatch-number   Maximum number of mismatches to search for in       4
                                 normal peptide match.
         -a, --assembly          The assembly version to run VEP.                    GRCh38
+        
+        Optional arguments affecting computational process:
+        -F, --fork              Number of processors running VEP.                   1
 
         Other options (these do not take values)
         -f, --make-fasta        Create FASTA file with long peptides 
@@ -1495,8 +1498,8 @@ def usage():
 def read_options(argv):
     try:
         optlist, args = getopt.getopt(argv,
-            'v:a:l:o:d:L:e:c:p:E:m:a:ftMwgh', 
-            ['input-file=', 'alleles=', 'length=', 'output-file=', 'out-dir=', 'log-file=', 'expression-file=', 'config-file=', 'prefix=', 'expression-type=', 'mismatch-number=','assembly=','make-fasta', 'keep-temp', 'mismatch-print', 'webserver', 'liftover','help'])
+            'v:a:l:o:d:L:e:c:p:E:m:a:F:ftMwgh', 
+            ['input-file=', 'alleles=', 'length=', 'output-file=', 'out-dir=', 'log-file=', 'expression-file=', 'config-file=', 'prefix=', 'expression-type=', 'mismatch-number=','assembly=', 'fork=','make-fasta', 'keep-temp', 'mismatch-print', 'webserver', 'liftover','help'])
         if not optlist:
             print 'No options supplied'
             usage()
@@ -1522,7 +1525,8 @@ def read_options(argv):
         '-M': '--mismatch-only',
         '-g': '--liftover',
         '-E': '--expression-type',
-        '-a': '--assembly'
+        '-a': '--assembly',
+        '-F': '--fork'
     }
 
     # Create a dictionary of options and input from the options list
@@ -1559,11 +1563,12 @@ def read_options(argv):
     liftover = 'Yes' if '-g' in opts.keys() else None
     num_mismatches = opts['-m'] if '-m' in opts.keys() else 4
     assembly = opts['-a'] if '-a' in opt.keys() else 'GRCh38'
+    fork = opts['-F'] if '-F' in opt.keys() else 1
 
 
     # Create and fill input named-tuple
-    Input = namedtuple('input', ['vcf_file', 'peptide_length', 'output', 'logfile', 'HLA_alleles', 'config', 'expression_file', 'fasta_file_name', 'webserver', 'outdir', 'keep_temp', 'prefix', 'print_mismatch', 'liftover', 'expression_type', 'num_mismatches', 'assembly'])
-    inputinfo = Input(vcf_file, peptide_length, output, logfile, HLA_alleles, config, expression_file, fasta_file_name, webserver, outdir, keep_temp, prefix, print_mismatch, liftover, expression_type, num_mismatches, assembly)
+    Input = namedtuple('input', ['vcf_file', 'peptide_length', 'output', 'logfile', 'HLA_alleles', 'config', 'expression_file', 'fasta_file_name', 'webserver', 'outdir', 'keep_temp', 'prefix', 'print_mismatch', 'liftover', 'expression_type', 'num_mismatches', 'assembly', 'fork'])
+    inputinfo = Input(vcf_file, peptide_length, output, logfile, HLA_alleles, config, expression_file, fasta_file_name, webserver, outdir, keep_temp, prefix, print_mismatch, liftover, expression_type, num_mismatches, assembly, fork)
 
     return inputinfo
 
