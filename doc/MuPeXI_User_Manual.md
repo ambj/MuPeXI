@@ -186,7 +186,8 @@ All options can be explored using the usage information with the `-h` option:
                                 by -o or -L.
         -L, --log-file          Logfile name.                                       <VCF-file>.log
         -m, --mismatch-number   Maximum number of mismatches to search for in       4
-                                normal peptide match. 
+                                normal peptide match.
+        -a, --assembly          The assembly version to run VEP.                    GRCh38
 
         Other options (these do not take values)
         -f, --make-fasta        Create FASTA file with long peptides 
@@ -196,7 +197,7 @@ All options can be explored using the usage information with the `-h` option:
         -M, --mismatch-only     Print only mismatches in normal peptide sequence 
                                 and otherwise use dots (...AA.....)
         -w, --webface           Run in webserver mode
-        -g, --hg19              Perform liftover HG19 to GRCh38.
+        -g, --liftover          Perform liftover HG19 to GRCh38.
                                 Requires local picard installation with paths
                                 stated in the config file
         -E, --expression-type   Setting if the expression values in the expression  transcript

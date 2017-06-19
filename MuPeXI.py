@@ -54,10 +54,10 @@ def main(args):
     print_ifnot_webserver('\nVEP: Starting process for running the Ensembl Variant Effect Predictor', input_.webserver)
 
     variant_caller = detect_variant_caller(input_.vcf_file, input_.webserver)
-    vcf_file = liftover_hg19(input_.hg19, input_.webserver, input_.vcf_file, input_.keep_temp, input_.outdir, input_.prefix, tmp_dir, input_.config)
-    vcf_sorted_file = create_vep_compatible_vcf(vcf_file, input_.webserver, tmp_dir, input_.hg19)
+    vcf_file = liftover_hg19(input_.liftover, input_.webserver, input_.vcf_file, input_.keep_temp, input_.outdir, input_.prefix, tmp_dir, input_.config)
+    vcf_sorted_file = create_vep_compatible_vcf(vcf_file, input_.webserver, tmp_dir, input_.liftover)
     allele_fractions = extract_allele_frequency(vcf_sorted_file, input_.webserver, variant_caller)
-    vep_file = run_vep(vcf_sorted_file, input_.webserver, tmp_dir, paths.vep_path, paths.vep_dir, input_.keep_temp, input_.prefix, input_.outdir)
+    vep_file = run_vep(vcf_sorted_file, input_.webserver, tmp_dir, paths.vep_path, paths.vep_dir, input_.keep_temp, input_.prefix, input_.outdir, input_.assembly)
     vep_info, vep_counters, transcript_info, protein_positions = build_vep_info(vep_file, input_.webserver)
 
     end_time_vep = datetime.now()
@@ -135,7 +135,7 @@ def check_input_paths(input_, peptide_lengths):
         check_path(input_.expression_file)
         check_file_size(input_.webserver, input_.expression_file, 'expression file')
 
-    check_vcf_file(input_.vcf_file, input_.hg19, input_.webserver)
+    check_vcf_file(input_.vcf_file, input_.liftover, input_.assembly, input_.webserver)
     check_path(input_.outdir)
 
     # Create and fill named tuple
@@ -176,7 +176,7 @@ def check_path(path):
 
 
 
-def check_vcf_file(vcf_file, hg19, webserver):
+def check_vcf_file(vcf_file, liftover, assembly, webserver):
     check_path(vcf_file)
 
     # Exit program if file size are exceeded 
@@ -189,8 +189,8 @@ def check_vcf_file(vcf_file, hg19, webserver):
         for line in f.readlines():
             if '##reference' in line:
                 if 'GRCh37' in line or 'hg19' in line or 'HG19' in line:
-                    if hg19 == None :
-                        usage(); sys.exit('ERROR: The VCF file is aligned to HG19 / GRCh37\nINFO: {}\nINFO: Please run NGS analysis aligning to GRCh38 or use the hg19 liftover option (-g/--hg19)\n'.format(line.strip()))
+                    if liftover == None and assembly == "GRCh38":
+                        usage(); sys.exit('ERROR: The VCF file is aligned to HG19 / GRCh37\nINFO: {}\nINFO: Please run NGS analysis aligning to GRCh38, use the hg19 liftover option (-g/--hg19), or the GRCh37 prediction option (-a/ --assembly GRCh37)\n'.format(line.strip()))
                     else :
                         continue
             if '#CHROM' in line:
@@ -376,8 +376,8 @@ def detect_variant_caller(vcf_file, webserver):
 
 
 
-def liftover_hg19(hg19, webserver, vcf_file, keep_tmp, outdir, file_prefix, tmp_dir, config_file):
-    if not hg19 == None:
+def liftover_hg19(liftover, webserver, vcf_file, keep_tmp, outdir, file_prefix, tmp_dir, config_file):
+    if not liftover == None:
         print_ifnot_webserver('\tPerforming Liftover', webserver)
         chain_file = config_parse(config_file, 'LiftOver', 'chain')
         fasta_file = config_parse(config_file, 'LiftOver', 'fasta')
@@ -461,7 +461,7 @@ def extract_allele_frequency(vcf_sorted_file, webserver, variant_caller):
 
 
 
-def run_vep(vcf_sorted_file, webserver, tmp_dir, vep_path, vep_dir, keep_tmp, file_prefix, outdir):
+def run_vep(vcf_sorted_file, webserver, tmp_dir, vep_path, vep_dir, keep_tmp, file_prefix, outdir, assembly):
     print_ifnot_webserver('\tRunning VEP', webserver)
     vep_file = NamedTemporaryFile(delete = False, dir = tmp_dir)
 
@@ -469,7 +469,7 @@ def run_vep(vcf_sorted_file, webserver, tmp_dir, vep_path, vep_dir, keep_tmp, fi
         '-fork', '5', 
         '--offline', 
         '--quiet', 
-        '--assembly', 'GRCh38', 
+        '--assembly', assembly, 
         '--species', 'homo_sapiens', 
         '--dir', vep_dir, 
         '-i', vcf_sorted_file.name, 
@@ -1271,7 +1271,7 @@ def score_creation(rank_normal, rank_mutant, expression_sum, gene_symbol, mismat
 
     affinity_mutant_score = logistic_funtion(rank_mutant)
     affinity_normal_score = logistic_funtion(rank_normal)
-    expression_score = hyperbolic_tangent_funktion(expression + k_expression_adjustment, expression_sum) 
+    expression_score = hyperbolic_tangent_function(expression + k_expression_adjustment, expression_sum) 
 
     # calculate priority score
     priority_score = affinity_mutant_score * expression_score * (1 - ((2 ** - mismatches) * affinity_normal_score)) * float(allele_frequency) * normal_match
@@ -1285,7 +1285,7 @@ def logistic_funtion(rank_mutant):
     affinity_score = 1/ (1 + math.exp(5 * (float(rank_mutant) - 2)))
     return affinity_score
 
-def hyperbolic_tangent_funktion(expression, expression_sum):
+def hyperbolic_tangent_function(expression, expression_sum):
     expression_score = 1 if expression_sum == None else math.tanh(expression)
     return expression_score
 
@@ -1306,7 +1306,7 @@ def write_log_file(argv, peptide_length, sequence_count, reference_peptide_count
     log_file = NamedTemporaryFile(delete = False, dir = tmp_dir)
 
     log = """
-        # VERSION:  MuPeXI 1.1
+        # VERSION:  MuPeXI 1.1.1
         # CALL:     {call}
         # DATE:     {day} {date} of {month} {year}
         # TIME:     {print_time}
@@ -1338,7 +1338,7 @@ def write_log_file(argv, peptide_length, sequence_count, reference_peptide_count
           Detecting HLA alleles:                     Detected the following {num_of_HLAalleles} HLA alleles:
                                                         {HLAalleles}
                                                         of which {num_of_unique_alleles} were unique
-          Running NetMHCpan 2.8:                     Analyzed {num_of_unique_alleles} HLA allele(s)
+          Running NetMHCpan 3.0:                     Analyzed {num_of_unique_alleles} HLA allele(s)
                                                      NetMHCpan runtime: {netMHCpan_runtime}
 
           MuPeI Runtime:                             {time_mupei}
@@ -1434,7 +1434,7 @@ def webserver_print_output(webserver, www_tmp_dir, output, logfile, fasta_file_n
 def usage():
     usage =   """
         MuPeXI - Mutant Peptide Extractor and Informer
-        version 2017-03-28
+        version 2017-06-15
 
         The current version of this program is available from
         https://github.com/ambj/MuPeXI
@@ -1469,7 +1469,8 @@ def usage():
                                 by -o or -L.
         -L, --log-file          Logfile name.                                       <VCF-file>.log
         -m, --mismatch-number   Maximum number of mismatches to search for in       4
-                                normal peptide match. 
+                                normal peptide match.
+        -a, --assembly          The assembly version to run VEP.                    GRCh38
 
         Other options (these do not take values)
         -f, --make-fasta        Create FASTA file with long peptides 
@@ -1479,7 +1480,7 @@ def usage():
         -M, --mismatch-only     Print only mismatches in normal peptide sequence 
                                 and otherwise use dots (...AA.....)
         -w, --webface           Run in webserver mode
-        -g, --hg19              Perform liftover HG19 to GRCh38.
+        -g, --liftover          Perform liftover HG19 to GRCh38.
                                 Requires local picard installation with paths
                                 stated in the config file
         -h, --help              Print this help information
@@ -1494,8 +1495,8 @@ def usage():
 def read_options(argv):
     try:
         optlist, args = getopt.getopt(argv,
-            'v:a:l:o:d:L:e:c:p:E:m:ftMwgh', 
-            ['input-file=', 'alleles=', 'length=', 'output-file=', 'out-dir=', 'log-file=', 'expression-file=', 'config-file=', 'prefix=', 'expression-type=', 'mismatch-number=','make-fasta', 'keep-temp', 'mismatch-print', 'webserver', 'hg19','help'])
+            'v:a:l:o:d:L:e:c:p:E:m:a:ftMwgh', 
+            ['input-file=', 'alleles=', 'length=', 'output-file=', 'out-dir=', 'log-file=', 'expression-file=', 'config-file=', 'prefix=', 'expression-type=', 'mismatch-number=','assembly=','make-fasta', 'keep-temp', 'mismatch-print', 'webserver', 'liftover','help'])
         if not optlist:
             print 'No options supplied'
             usage()
@@ -1519,8 +1520,9 @@ def read_options(argv):
         '-a': '--alleles',
         '-m': '--mismatch-number',
         '-M': '--mismatch-only',
-        '-g': '--hg19',
-        '-E': '--expression-type'
+        '-g': '--liftover',
+        '-E': '--expression-type',
+        '-a': '--assembly'
     }
 
     # Create a dictionary of options and input from the options list
@@ -1554,13 +1556,14 @@ def read_options(argv):
     keep_temp = 'yes' if '-t' in opts.keys() else None
     HLA_alleles = opts['-a'] if '-a' in opts.keys() else 'HLA-A02:01'
     print_mismatch = 'Yes' if '-M' in opts.keys() else None
-    hg19 = 'Yes' if '-g' in opts.keys() else None
+    liftover = 'Yes' if '-g' in opts.keys() else None
     num_mismatches = opts['-m'] if '-m' in opts.keys() else 4
+    assembly = opts['-a'] if '-a' in opt.keys() else 'GRCh38'
 
 
     # Create and fill input named-tuple
-    Input = namedtuple('input', ['vcf_file', 'peptide_length', 'output', 'logfile', 'HLA_alleles', 'config', 'expression_file', 'fasta_file_name', 'webserver', 'outdir', 'keep_temp', 'prefix', 'print_mismatch', 'hg19', 'expression_type', 'num_mismatches'])
-    inputinfo = Input(vcf_file, peptide_length, output, logfile, HLA_alleles, config, expression_file, fasta_file_name, webserver, outdir, keep_temp, prefix, print_mismatch, hg19, expression_type, num_mismatches)
+    Input = namedtuple('input', ['vcf_file', 'peptide_length', 'output', 'logfile', 'HLA_alleles', 'config', 'expression_file', 'fasta_file_name', 'webserver', 'outdir', 'keep_temp', 'prefix', 'print_mismatch', 'liftover', 'expression_type', 'num_mismatches', 'assembly'])
+    inputinfo = Input(vcf_file, peptide_length, output, logfile, HLA_alleles, config, expression_file, fasta_file_name, webserver, outdir, keep_temp, prefix, print_mismatch, liftover, expression_type, num_mismatches, assembly)
 
     return inputinfo
 
