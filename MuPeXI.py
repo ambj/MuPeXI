@@ -467,7 +467,7 @@ def run_vep(vcf_sorted_file, webserver, tmp_dir, vep_path, vep_dir, keep_tmp, fi
     vep_file = NamedTemporaryFile(delete = False, dir = tmp_dir)
 
     p1 = subprocess.Popen([vep_path, 
-        '-fork', fork, 
+        '-fork', chr(fork), 
         '--offline', 
         '--quiet', 
         '--assembly', assembly, 
