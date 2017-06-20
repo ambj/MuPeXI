@@ -187,7 +187,7 @@ def check_vcf_file(vcf_file, liftover, assembly, webserver):
         if not first_line.startswith('##fileformat=VCF'):
             usage(); sys.exit('ERROR: {} file is not a VCF file\n'.format(vcf_file))
         for line in f.readlines():
-            if not Webserver == None:
+            if not webserver == None:
                 if '##reference' in line:
                     if 'GRCh37' in line or 'hg19' in line or 'HG19' in line:
                         if liftover == None and assembly == "GRCh38":
