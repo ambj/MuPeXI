@@ -515,6 +515,7 @@ def build_vep_info(vep_file, webserver):
             # save relevant information from line 
             mutation_consequence = line[6].split(',')[0].strip()
             chr_, genome_pos = line[1].split(':')
+            genome_pos = genome_pos.strip()
             alt_allele = line[2].strip()
             geneID = line[3].strip()
             transID = line[4].strip()
@@ -662,7 +663,7 @@ def peptide_extraction(peptide_lengths, vep_info, proteome_reference, genome_ref
                 peptide_mutation_position = peptide_mutation_position_annotation(mutpeps, peptide_sequence_info.mutation_position, p_length)
                 peptide_info, intermediate_peptide_counters = peptide_selection(normpeps, mutpeps, peptide_mutation_position, intermediate_peptide_counters, peptide_sequence_info, peptide_info, mutation_info, p_length, reference_peptides)
 
-            # Accumulate counters 
+            # Accumulate counters
             peptide_count += intermediate_peptide_counters['mutation_peptide_count']
             normal_match_count += intermediate_peptide_counters['mutation_normal_match_count']
             removal_count += intermediate_peptide_counters['peptide_removal_count']
@@ -787,9 +788,11 @@ def run_peptide_match(mutpeps_file, peptide_length, peptide_match, reference_pep
     reference_peptide_file_name = reference_peptide_file.name if not type(reference_peptide_file) == str else reference_peptide_file
     pepmatch_file = NamedTemporaryFile(delete = False, dir = tmp_dir)
     if not print_mismatch == None:
-        process_pepmatch = subprocess.Popen([peptide_match, '-mm', '-thr' , str(num_mismatches), mutpeps_file.name, reference_peptide_file_name], stdout = pepmatch_file)
+        popen_args = [peptide_match, '-mm', '-thr' , str(num_mismatches), mutpeps_file.name, reference_peptide_file_name]
+        process_pepmatch = subprocess.Popen(popen_args, stdout = pepmatch_file)
     else:
-        process_pepmatch = subprocess.Popen([peptide_match, '-thr' , str(num_mismatches), mutpeps_file.name, reference_peptide_file_name], stdout = pepmatch_file)
+        popen_args = [peptide_match, '-thr' , str(num_mismatches), mutpeps_file.name, reference_peptide_file_name]
+        process_pepmatch = subprocess.Popen(popen_args, stdout = pepmatch_file)
     process_pepmatch.communicate() # now wait
     pepmatch_file.close()
     return pepmatch_file
@@ -1022,7 +1025,8 @@ def run_netMHCpan(HLA_alleles, netMHCpan3_0, peptide_file, tmp_dir, webserver, k
     print_ifnot_webserver('\tRunning NetMHCpan', webserver)
     netMHCpan_start = datetime.now()
     netMHC_file = NamedTemporaryFile(delete = False, dir = tmp_dir)
-    process_netMHC = subprocess.Popen([netMHCpan3_0, '-p', '-a', unique_alleles, '-f', peptide_file.name], stdout = netMHC_file)
+    popen_args = [netMHCpan3_0, '-p', '-a', unique_alleles, '-f', peptide_file.name]
+    process_netMHC = subprocess.Popen(popen_args, stdout = netMHC_file)
     process_netMHC.communicate() # now wait
     netMHC_file.close()
 
@@ -1473,7 +1477,7 @@ def usage():
         -L, --log-file          Logfile name.                                       <VCF-file>.log
         -m, --mismatch-number   Maximum number of mismatches to search for in       4
                                 normal peptide match.
-        -a, --assembly          The assembly version to run VEP.                    GRCh38
+        -A, --assembly          The assembly version to run VEP.                    GRCh38
         
         Optional arguments affecting computational process:
         -F, --fork              Number of processors running VEP.                   1
@@ -1501,7 +1505,7 @@ def usage():
 def read_options(argv):
     try:
         optlist, args = getopt.getopt(argv,
-            'v:a:l:o:d:L:e:c:p:E:m:a:F:ftMwgh', 
+            'v:a:l:o:d:L:e:c:p:E:m:A:F:ftMwgh', 
             ['input-file=', 'alleles=', 'length=', 'output-file=', 'out-dir=', 'log-file=', 'expression-file=', 'config-file=', 'prefix=', 'expression-type=', 'mismatch-number=','assembly=', 'fork=','make-fasta', 'keep-temp', 'mismatch-print', 'webserver', 'liftover','help'])
         if not optlist:
             print 'No options supplied'
@@ -1528,7 +1532,7 @@ def read_options(argv):
         '-M': '--mismatch-only',
         '-g': '--liftover',
         '-E': '--expression-type',
-        '-a': '--assembly',
+        '-A': '--assembly',
         '-F': '--fork'
     }
 
@@ -1565,7 +1569,7 @@ def read_options(argv):
     print_mismatch = 'Yes' if '-M' in opts.keys() else None
     liftover = 'Yes' if '-g' in opts.keys() else None
     num_mismatches = opts['-m'] if '-m' in opts.keys() else 4
-    assembly = opts['-a'] if '-a' in opts.keys() else 'GRCh38'
+    assembly = opts['-A'] if '-A' in opts.keys() else 'GRCh38'
     fork = opts['-F'] if '-F' in opts.keys() else 1
 
 
