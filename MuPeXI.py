@@ -465,9 +465,9 @@ def extract_allele_frequency(vcf_sorted_file, webserver, variant_caller):
 def run_vep(vcf_sorted_file, webserver, tmp_dir, vep_path, vep_dir, keep_tmp, file_prefix, outdir, assembly, fork):
     print_ifnot_webserver('\tRunning VEP', webserver)
     vep_file = NamedTemporaryFile(delete = False, dir = tmp_dir)
-
-    p1 = subprocess.Popen([vep_path, 
-        '-fork', chr(fork), 
+    popen_args = [
+        vep_path, 
+        '-fork', str(fork), 
         '--offline', 
         '--quiet', 
         '--assembly', assembly, 
@@ -476,7 +476,9 @@ def run_vep(vcf_sorted_file, webserver, tmp_dir, vep_path, vep_dir, keep_tmp, fi
         '-i', vcf_sorted_file.name, 
         '--force_overwrite',
         '--symbol', # print gene symbol in output  
-        '-o', vep_file.name], 
+        '-o', vep_file.name]
+
+    p1 = subprocess.Popen(popen_args,
         stdout = subprocess.PIPE,
         stderr = subprocess.PIPE)
     p1.communicate()
@@ -509,7 +511,7 @@ def build_vep_info(vep_file, webserver):
                 continue
             if 'stop' in line:
                 continue
-            line = line.split()
+            line = line.split('\t')
             # save relevant information from line 
             mutation_consequence = line[6].split(',')[0].strip()
             chr_, genome_pos = line[1].split(':')
