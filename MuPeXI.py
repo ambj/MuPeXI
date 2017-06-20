@@ -1563,8 +1563,8 @@ def read_options(argv):
     print_mismatch = 'Yes' if '-M' in opts.keys() else None
     liftover = 'Yes' if '-g' in opts.keys() else None
     num_mismatches = opts['-m'] if '-m' in opts.keys() else 4
-    assembly = opts['-a'] if '-a' in opt.keys() else 'GRCh38'
-    fork = opts['-F'] if '-F' in opt.keys() else 1
+    assembly = opts['-a'] if '-a' in opts.keys() else 'GRCh38'
+    fork = opts['-F'] if '-F' in opts.keys() else 1
 
 
     # Create and fill input named-tuple
