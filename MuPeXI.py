@@ -27,6 +27,7 @@ def main(args):
 
     # State input in variables
     input_ = read_options(args)
+    version = '1.1.3'
 
     # Redirect std error when run on webserver 
     webserver_err_redirection(input_.webserver)
@@ -96,8 +97,8 @@ def main(args):
     net_mhc = build_netMHC(netMHC_file, input_.webserver)
 
     # write files 
-    output_file = write_output_file(peptide_info, expression, net_mhc, unique_alleles, cancer_genes, tmp_dir, input_.webserver, input_.print_mismatch, allele_fractions, input_.expression_type, transcript_info, reference_peptides, proteome_reference, protein_positions)
-    log_file = write_log_file(sys.argv, peptide_length, sequence_count, reference_peptide_counters, vep_counters, peptide_counters, start_time_mupex, start_time_mupei, start_time, end_time_mupex, input_.HLA_alleles, netMHCpan_runtime, unique_mutant_peptide_count, unique_alleles, tmp_dir, input_.webserver)
+    output_file = write_output_file(peptide_info, expression, net_mhc, unique_alleles, cancer_genes, tmp_dir, input_.webserver, input_.print_mismatch, allele_fractions, input_.expression_type, transcript_info, reference_peptides, proteome_reference, protein_positions, version)
+    log_file = write_log_file(sys.argv, peptide_length, sequence_count, reference_peptide_counters, vep_counters, peptide_counters, start_time_mupex, start_time_mupei, start_time, end_time_mupex, input_.HLA_alleles, netMHCpan_runtime, unique_mutant_peptide_count, unique_alleles, tmp_dir, input_.webserver, version)
 
     # clean up
     move_output_files(input_.outdir, log_file, input_.logfile, fasta_file, input_.fasta_file_name, output_file, input_.output, input_.webserver, www_tmp_dir)
@@ -1061,7 +1062,7 @@ def build_netMHC(netMHC_file, webserver):
 
 
 
-def write_output_file(peptide_info, expression, net_mhc, unique_alleles, cancer_genes, tmp_dir, webserver, print_mismatch, allele_fractions, expression_file_type, transcript_info, reference_peptides, proteome_reference, protein_positions):
+def write_output_file(peptide_info, expression, net_mhc, unique_alleles, cancer_genes, tmp_dir, webserver, print_mismatch, allele_fractions, expression_file_type, transcript_info, reference_peptides, proteome_reference, protein_positions, version):
     print_ifnot_webserver('\tWriting output file', webserver)
     printed_ids = set()
     row = 0
@@ -1176,8 +1177,9 @@ def write_output_file(peptide_info, expression, net_mhc, unique_alleles, cancer_
 
     # Print header to output file 
     header_file = NamedTemporaryFile(delete = False, dir = tmp_dir)
-    header = "# VERSION:\tMuPeXI 1.1.2\n# CALL:\t\t{call}\n# DATE:\t\t{day} {date} of {month} {year}\n# TIME:\t\t{print_time}\n# PWD:\t\t{pwd}\n"
-    header_file.write(header.format(call = ' '.join(map(str, sys.argv)),
+    header = "# VERSION:\tMuPeXI {version}\n# CALL:\t\t{call}\n# DATE:\t\t{day} {date} of {month} {year}\n# TIME:\t\t{print_time}\n# PWD:\t\t{pwd}\n"
+    header_file.write(header.format(version = version,
+        call = ' '.join(map(str, sys.argv)),
         day = datetime.now().strftime("%A"),
         month = datetime.now().strftime("%B"),
         year = datetime.now().strftime("%Y"),
@@ -1307,12 +1309,12 @@ def mismatch_snv_normal_peptide_conversion(normal_peptide, peptide_position, con
 
 
 
-def write_log_file(argv, peptide_length, sequence_count, reference_peptide_counters, vep_counters, peptide_counters, start_time_mupex, start_time_mupei, start_time, end_time_mupex, HLAalleles, netMHCpan_runtime, unique_mutant_peptide_count, unique_alleles, tmp_dir, webserver):
+def write_log_file(argv, peptide_length, sequence_count, reference_peptide_counters, vep_counters, peptide_counters, start_time_mupex, start_time_mupei, start_time, end_time_mupex, HLAalleles, netMHCpan_runtime, unique_mutant_peptide_count, unique_alleles, tmp_dir, webserver, version):
     print_ifnot_webserver('\tWriting log file\n', webserver)
     log_file = NamedTemporaryFile(delete = False, dir = tmp_dir)
 
     log = """
-        # VERSION:  MuPeXI 1.1.2
+        # VERSION:  MuPeXI {version}
         # CALL:     {call}
         # DATE:     {day} {date} of {month} {year}
         # TIME:     {print_time}
@@ -1351,7 +1353,8 @@ def write_log_file(argv, peptide_length, sequence_count, reference_peptide_count
 
           TOTAL Runtime:                             {time}
           """
-    log_file.write(log.format(call = ' '.join(map(str, argv)), 
+    log_file.write(log.format(version = version,
+        call = ' '.join(map(str, argv)), 
         sequence_count = sequence_count, 
         reference_peptide_count = reference_peptide_counters.total_peptide_count,
         unique_reference_peptide_count = reference_peptide_counters.unique_peptide_count,
@@ -1440,7 +1443,6 @@ def webserver_print_output(webserver, www_tmp_dir, output, logfile, fasta_file_n
 def usage():
     usage =   """
         MuPeXI - Mutant Peptide Extractor and Informer
-        version 2017-06-15
 
         The current version of this program is available from
         https://github.com/ambj/MuPeXI
@@ -1498,6 +1500,7 @@ def usage():
 
         """
     print(usage.format(call = sys.argv[0], path = '/'.join(sys.argv[0].split('/')[0:-1]) ))
+    return version
 
 
 
