@@ -19,8 +19,7 @@ from Bio.Alphabet import generic_dna
 from Bio import BiopythonWarning
 from ConfigParser import SafeConfigParser
 from tempfile import NamedTemporaryFile
-from pandas import DataFrame
-import sys, re, getopt, itertools, warnings, string, subprocess, os.path, math, tempfile, shutil, numpy
+import sys, re, getopt, itertools, warnings, string, subprocess, os.path, math, tempfile, shutil, numpy, pandas
 
 
 def main(args):
@@ -1068,7 +1067,7 @@ def write_output_file(peptide_info, expression, net_mhc, unique_alleles, cancer_
     row = 0
 
     # Create data frame 
-    df = DataFrame(columns = (
+    df = pandas.DataFrame(columns = (
         'HLA_allele',
         'Norm_peptide',
         'Norm_MHCAffinity',
@@ -1166,7 +1165,7 @@ def write_output_file(peptide_info, expression, net_mhc, unique_alleles, cancer_
 
     # Sort, round up prioritization score
     print_ifnot_webserver('\tSorting output file', webserver)
-    df_sorted = df.sort_values('priority_Score', ascending=False)
+    df_sorted = df.sort_values('priority_Score', ascending=False) if not pandas.__version__ == '0.16.0' else df.sort(columns = ('priority_Score'), ascending=False)
     df_sorted.loc[:,'priority_Score'] = df_sorted.priority_Score.multiply(100).round().astype(int)
     df_sorted.loc[:,'Mismatches'] = df_sorted.Mismatches.astype(int)
 
