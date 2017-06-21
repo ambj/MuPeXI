@@ -1500,7 +1500,6 @@ def usage():
 
         """
     print(usage.format(call = sys.argv[0], path = '/'.join(sys.argv[0].split('/')[0:-1]) ))
-    return version
 
 
 
