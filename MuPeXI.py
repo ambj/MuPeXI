@@ -1565,7 +1565,7 @@ def read_options(argv):
     print_mismatch = 'Yes' if '-M' in opts.keys() else None
     liftover = 'Yes' if '-g' in opts.keys() else None
     num_mismatches = opts['-m'] if '-m' in opts.keys() else 4
-    assembly = opts['-a'] if '-a' in opts.keys() else 'GRCh38'
+    assembly = opts['-A'] if '-A' in opts.keys() else 'GRCh38'
     fork = opts['-F'] if '-F' in opts.keys() else 1
 
 
