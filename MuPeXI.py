@@ -1176,7 +1176,7 @@ def write_output_file(peptide_info, expression, net_mhc, unique_alleles, cancer_
 
     # Print header to output file 
     header_file = NamedTemporaryFile(delete = False, dir = tmp_dir)
-    header = "# VERSION:\tMuPeXI 1.1\n# CALL:\t\t{call}\n# DATE:\t\t{day} {date} of {month} {year}\n# TIME:\t\t{print_time}\n# PWD:\t\t{pwd}\n"
+    header = "# VERSION:\tMuPeXI 1.1.2\n# CALL:\t\t{call}\n# DATE:\t\t{day} {date} of {month} {year}\n# TIME:\t\t{print_time}\n# PWD:\t\t{pwd}\n"
     header_file.write(header.format(call = ' '.join(map(str, sys.argv)),
         day = datetime.now().strftime("%A"),
         month = datetime.now().strftime("%B"),
@@ -1312,7 +1312,7 @@ def write_log_file(argv, peptide_length, sequence_count, reference_peptide_count
     log_file = NamedTemporaryFile(delete = False, dir = tmp_dir)
 
     log = """
-        # VERSION:  MuPeXI 1.1.1
+        # VERSION:  MuPeXI 1.1.2
         # CALL:     {call}
         # DATE:     {day} {date} of {month} {year}
         # TIME:     {print_time}
@@ -1479,7 +1479,7 @@ def usage():
         -A, --assembly          The assembly version to run VEP.                    GRCh38
         
         Optional arguments affecting computational process:
-        -F, --fork              Number of processors running VEP.                   1
+        -F, --fork              Number of processors running VEP.                   2
 
         Other options (these do not take values)
         -f, --make-fasta        Create FASTA file with long peptides 
@@ -1570,7 +1570,8 @@ def read_options(argv):
     num_mismatches = opts['-m'] if '-m' in opts.keys() else 4
     assembly = opts['-A'] if '-A' in opts.keys() else 'GRCh38'
     fork = opts['-F'] if '-F' in opts.keys() else 2
-
+    if int(fork) <= 1:
+        usage(); sys.exit('VEP fork number must be greater than 1')
 
     # Create and fill input named-tuple
     Input = namedtuple('input', ['vcf_file', 'peptide_length', 'output', 'logfile', 'HLA_alleles', 'config', 'expression_file', 'fasta_file_name', 'webserver', 'outdir', 'keep_temp', 'prefix', 'print_mismatch', 'liftover', 'expression_type', 'num_mismatches', 'assembly', 'fork'])
