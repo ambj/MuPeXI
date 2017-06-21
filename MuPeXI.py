@@ -481,8 +481,12 @@ def run_vep(vcf_sorted_file, webserver, tmp_dir, vep_path, vep_dir, keep_tmp, fi
     p1 = subprocess.Popen(popen_args,
         stdout = subprocess.PIPE,
         stderr = subprocess.PIPE)
-    p1.communicate()
+    output, error = p1.communicate()
     vep_file.close()
+    
+    # Test if VEP file is empty 
+    if os.stat(vep_file.name).st_size == 0 :
+        sys.exit('ERROR: VEP output file empty\nVEP {}'.format(error))
 
     keep_temp_file(keep_tmp, 'vep', vep_file.name, file_prefix, outdir, None, 'vep')
 
@@ -1473,7 +1477,7 @@ def usage():
         -L, --log-file          Logfile name.                                       <VCF-file>.log
         -m, --mismatch-number   Maximum number of mismatches to search for in       4
                                 normal peptide match.
-        -a, --assembly          The assembly version to run VEP.                    GRCh38
+        -A, --assembly          The assembly version to run VEP.                    GRCh38
         
         Optional arguments affecting computational process:
         -F, --fork              Number of processors running VEP.                   1
@@ -1501,7 +1505,7 @@ def usage():
 def read_options(argv):
     try:
         optlist, args = getopt.getopt(argv,
-            'v:a:l:o:d:L:e:c:p:E:m:a:F:ftMwgh', 
+            'v:a:l:o:d:L:e:c:p:E:m:A:F:ftMwgh', 
             ['input-file=', 'alleles=', 'length=', 'output-file=', 'out-dir=', 'log-file=', 'expression-file=', 'config-file=', 'prefix=', 'expression-type=', 'mismatch-number=','assembly=', 'fork=','make-fasta', 'keep-temp', 'mismatch-print', 'webserver', 'liftover','help'])
         if not optlist:
             print 'No options supplied'
@@ -1528,7 +1532,7 @@ def read_options(argv):
         '-M': '--mismatch-only',
         '-g': '--liftover',
         '-E': '--expression-type',
-        '-a': '--assembly',
+        '-A': '--assembly',
         '-F': '--fork'
     }
 
@@ -1566,7 +1570,7 @@ def read_options(argv):
     liftover = 'Yes' if '-g' in opts.keys() else None
     num_mismatches = opts['-m'] if '-m' in opts.keys() else 4
     assembly = opts['-A'] if '-A' in opts.keys() else 'GRCh38'
-    fork = opts['-F'] if '-F' in opts.keys() else 1
+    fork = opts['-F'] if '-F' in opts.keys() else 2
 
 
     # Create and fill input named-tuple
