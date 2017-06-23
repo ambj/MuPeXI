@@ -445,13 +445,14 @@ def extract_allele_frequency(vcf_sorted_file, webserver, variant_caller):
                 genomic_position = columns[1].strip()
                 reference_allele = columns[3].strip()
                 altered_allele = columns[4].strip()
+                format_fields = columns[8].split(':')
                 if not len(reference_allele) == len(altered_allele):
                     altered_allele = altered_allele[1:] if len(reference_allele) < len(altered_allele) else altered_allele
                     altered_allele = '-' if len(reference_allele) > len(altered_allele) else altered_allele
                 if variant_caller == 'MuTect':
-                    allele_fraction = columns[9].split(':')[4].strip() # GT:AD:BQ:DP:FA
+                    allele_fraction = columns[9].split(':')[format_fields.index('FA')].strip() # GT:AD:BQ:DP:FA
                 elif variant_caller == 'MuTect2':
-                    allele_fraction = columns[9].split(':')[2].strip() # GT:AD:AF:ALT_F1R2:ALT_F2R1:FOXOG:QSS:REF_F1R2:REF_F2R1
+                    allele_fraction = columns[9].split(':')[format_fields.index('AD')].strip() # GT:AD:AF:ALT_F1R2:ALT_F2R1:FOXOG:QSS:REF_F1R2:REF_F2R1
                 ID = '{chromosome}_{genomic_position}_{altered_allele}'.format(
                     chromosome = chromosome, 
                     genomic_position = genomic_position if not altered_allele == '-' else int(genomic_position) + 1,
