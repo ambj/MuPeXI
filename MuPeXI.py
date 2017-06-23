@@ -19,8 +19,7 @@ from Bio.Alphabet import generic_dna
 from Bio import BiopythonWarning
 from ConfigParser import SafeConfigParser
 from tempfile import NamedTemporaryFile
-from pandas import DataFrame
-import sys, re, getopt, itertools, warnings, string, subprocess, os.path, math, tempfile, shutil, numpy
+import sys, re, getopt, itertools, warnings, string, subprocess, os.path, math, tempfile, shutil, numpy, pandas
 
 
 def main(args):
@@ -28,6 +27,7 @@ def main(args):
 
     # State input in variables
     input_ = read_options(args)
+    version = '1.1.3'
 
     # Redirect std error when run on webserver 
     webserver_err_redirection(input_.webserver)
@@ -97,8 +97,8 @@ def main(args):
     net_mhc = build_netMHC(netMHC_file, input_.webserver)
 
     # write files 
-    output_file = write_output_file(peptide_info, expression, net_mhc, unique_alleles, cancer_genes, tmp_dir, input_.webserver, input_.print_mismatch, allele_fractions, input_.expression_type, transcript_info, reference_peptides, proteome_reference, protein_positions)
-    log_file = write_log_file(sys.argv, peptide_length, sequence_count, reference_peptide_counters, vep_counters, peptide_counters, start_time_mupex, start_time_mupei, start_time, end_time_mupex, input_.HLA_alleles, netMHCpan_runtime, unique_mutant_peptide_count, unique_alleles, tmp_dir, input_.webserver)
+    output_file = write_output_file(peptide_info, expression, net_mhc, unique_alleles, cancer_genes, tmp_dir, input_.webserver, input_.print_mismatch, allele_fractions, input_.expression_type, transcript_info, reference_peptides, proteome_reference, protein_positions, version)
+    log_file = write_log_file(sys.argv, peptide_length, sequence_count, reference_peptide_counters, vep_counters, peptide_counters, start_time_mupex, start_time_mupei, start_time, end_time_mupex, input_.HLA_alleles, netMHCpan_runtime, unique_mutant_peptide_count, unique_alleles, tmp_dir, input_.webserver, version)
 
     # clean up
     move_output_files(input_.outdir, log_file, input_.logfile, fasta_file, input_.fasta_file_name, output_file, input_.output, input_.webserver, www_tmp_dir)
@@ -481,8 +481,12 @@ def run_vep(vcf_sorted_file, webserver, tmp_dir, vep_path, vep_dir, keep_tmp, fi
     p1 = subprocess.Popen(popen_args,
         stdout = subprocess.PIPE,
         stderr = subprocess.PIPE)
-    p1.communicate()
+    output, error = p1.communicate()
     vep_file.close()
+    
+    # Test if VEP file is empty 
+    if os.stat(vep_file.name).st_size == 0 :
+        sys.exit('ERROR: VEP output file empty\nVEP {}'.format(error))
 
     keep_temp_file(keep_tmp, 'vep', vep_file.name, file_prefix, outdir, None, 'vep')
 
@@ -1058,13 +1062,13 @@ def build_netMHC(netMHC_file, webserver):
 
 
 
-def write_output_file(peptide_info, expression, net_mhc, unique_alleles, cancer_genes, tmp_dir, webserver, print_mismatch, allele_fractions, expression_file_type, transcript_info, reference_peptides, proteome_reference, protein_positions):
+def write_output_file(peptide_info, expression, net_mhc, unique_alleles, cancer_genes, tmp_dir, webserver, print_mismatch, allele_fractions, expression_file_type, transcript_info, reference_peptides, proteome_reference, protein_positions, version):
     print_ifnot_webserver('\tWriting output file', webserver)
     printed_ids = set()
     row = 0
 
     # Create data frame 
-    df = DataFrame(columns = (
+    df = pandas.DataFrame(columns = (
         'HLA_allele',
         'Norm_peptide',
         'Norm_MHCAffinity',
@@ -1162,7 +1166,7 @@ def write_output_file(peptide_info, expression, net_mhc, unique_alleles, cancer_
 
     # Sort, round up prioritization score
     print_ifnot_webserver('\tSorting output file', webserver)
-    df_sorted = df.sort_values('priority_Score', ascending=False)
+    df_sorted = df.sort_values('priority_Score', ascending=False) if not pandas.__version__ == '0.16.0' else df.sort(columns = ('priority_Score'), ascending=False)
     df_sorted.loc[:,'priority_Score'] = df_sorted.priority_Score.multiply(100).round().astype(int)
     df_sorted.loc[:,'Mismatches'] = df_sorted.Mismatches.astype(int)
 
@@ -1173,8 +1177,9 @@ def write_output_file(peptide_info, expression, net_mhc, unique_alleles, cancer_
 
     # Print header to output file 
     header_file = NamedTemporaryFile(delete = False, dir = tmp_dir)
-    header = "# VERSION:\tMuPeXI 1.1\n# CALL:\t\t{call}\n# DATE:\t\t{day} {date} of {month} {year}\n# TIME:\t\t{print_time}\n# PWD:\t\t{pwd}\n"
-    header_file.write(header.format(call = ' '.join(map(str, sys.argv)),
+    header = "# VERSION:\tMuPeXI {version}\n# CALL:\t\t{call}\n# DATE:\t\t{day} {date} of {month} {year}\n# TIME:\t\t{print_time}\n# PWD:\t\t{pwd}\n"
+    header_file.write(header.format(version = version,
+        call = ' '.join(map(str, sys.argv)),
         day = datetime.now().strftime("%A"),
         month = datetime.now().strftime("%B"),
         year = datetime.now().strftime("%Y"),
@@ -1304,12 +1309,12 @@ def mismatch_snv_normal_peptide_conversion(normal_peptide, peptide_position, con
 
 
 
-def write_log_file(argv, peptide_length, sequence_count, reference_peptide_counters, vep_counters, peptide_counters, start_time_mupex, start_time_mupei, start_time, end_time_mupex, HLAalleles, netMHCpan_runtime, unique_mutant_peptide_count, unique_alleles, tmp_dir, webserver):
+def write_log_file(argv, peptide_length, sequence_count, reference_peptide_counters, vep_counters, peptide_counters, start_time_mupex, start_time_mupei, start_time, end_time_mupex, HLAalleles, netMHCpan_runtime, unique_mutant_peptide_count, unique_alleles, tmp_dir, webserver, version):
     print_ifnot_webserver('\tWriting log file\n', webserver)
     log_file = NamedTemporaryFile(delete = False, dir = tmp_dir)
 
     log = """
-        # VERSION:  MuPeXI 1.1.1
+        # VERSION:  MuPeXI {version}
         # CALL:     {call}
         # DATE:     {day} {date} of {month} {year}
         # TIME:     {print_time}
@@ -1348,7 +1353,8 @@ def write_log_file(argv, peptide_length, sequence_count, reference_peptide_count
 
           TOTAL Runtime:                             {time}
           """
-    log_file.write(log.format(call = ' '.join(map(str, argv)), 
+    log_file.write(log.format(version = version,
+        call = ' '.join(map(str, argv)), 
         sequence_count = sequence_count, 
         reference_peptide_count = reference_peptide_counters.total_peptide_count,
         unique_reference_peptide_count = reference_peptide_counters.unique_peptide_count,
@@ -1437,7 +1443,6 @@ def webserver_print_output(webserver, www_tmp_dir, output, logfile, fasta_file_n
 def usage():
     usage =   """
         MuPeXI - Mutant Peptide Extractor and Informer
-        version 2017-06-15
 
         The current version of this program is available from
         https://github.com/ambj/MuPeXI
@@ -1473,10 +1478,10 @@ def usage():
         -L, --log-file          Logfile name.                                       <VCF-file>.log
         -m, --mismatch-number   Maximum number of mismatches to search for in       4
                                 normal peptide match.
-        -a, --assembly          The assembly version to run VEP.                    GRCh38
+        -A, --assembly          The assembly version to run VEP.                    GRCh38
         
         Optional arguments affecting computational process:
-        -F, --fork              Number of processors running VEP.                   1
+        -F, --fork              Number of processors running VEP.                   2
 
         Other options (these do not take values)
         -f, --make-fasta        Create FASTA file with long peptides 
@@ -1501,7 +1506,7 @@ def usage():
 def read_options(argv):
     try:
         optlist, args = getopt.getopt(argv,
-            'v:a:l:o:d:L:e:c:p:E:m:a:F:ftMwgh', 
+            'v:a:l:o:d:L:e:c:p:E:m:A:F:ftMwgh', 
             ['input-file=', 'alleles=', 'length=', 'output-file=', 'out-dir=', 'log-file=', 'expression-file=', 'config-file=', 'prefix=', 'expression-type=', 'mismatch-number=','assembly=', 'fork=','make-fasta', 'keep-temp', 'mismatch-print', 'webserver', 'liftover','help'])
         if not optlist:
             print 'No options supplied'
@@ -1528,7 +1533,7 @@ def read_options(argv):
         '-M': '--mismatch-only',
         '-g': '--liftover',
         '-E': '--expression-type',
-        '-a': '--assembly',
+        '-A': '--assembly',
         '-F': '--fork'
     }
 
@@ -1565,9 +1570,10 @@ def read_options(argv):
     print_mismatch = 'Yes' if '-M' in opts.keys() else None
     liftover = 'Yes' if '-g' in opts.keys() else None
     num_mismatches = opts['-m'] if '-m' in opts.keys() else 4
-    assembly = opts['-a'] if '-a' in opts.keys() else 'GRCh38'
-    fork = opts['-F'] if '-F' in opts.keys() else 1
-
+    assembly = opts['-A'] if '-A' in opts.keys() else 'GRCh38'
+    fork = opts['-F'] if '-F' in opts.keys() else 2
+    if int(fork) <= 1:
+        usage(); sys.exit('VEP fork number must be greater than 1')
 
     # Create and fill input named-tuple
     Input = namedtuple('input', ['vcf_file', 'peptide_length', 'output', 'logfile', 'HLA_alleles', 'config', 'expression_file', 'fasta_file_name', 'webserver', 'outdir', 'keep_temp', 'prefix', 'print_mismatch', 'liftover', 'expression_type', 'num_mismatches', 'assembly', 'fork'])
