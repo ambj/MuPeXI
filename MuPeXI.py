@@ -793,11 +793,9 @@ def run_peptide_match(mutpeps_file, peptide_length, peptide_match, reference_pep
     reference_peptide_file_name = reference_peptide_file.name if not type(reference_peptide_file) == str else reference_peptide_file
     pepmatch_file = NamedTemporaryFile(delete = False, dir = tmp_dir)
     if not print_mismatch == None:
-        popen_args = [peptide_match, '-mm', '-thr' , str(num_mismatches), mutpeps_file.name, reference_peptide_file_name]
-        process_pepmatch = subprocess.Popen(popen_args, stdout = pepmatch_file)
+        process_pepmatch = subprocess.Popen([peptide_match, '-mm', '-thr' , str(num_mismatches), mutpeps_file.name, reference_peptide_file_name], stdout = pepmatch_file)
     else:
-        popen_args = [peptide_match, '-thr' , str(num_mismatches), mutpeps_file.name, reference_peptide_file_name]
-        process_pepmatch = subprocess.Popen(popen_args, stdout = pepmatch_file)
+        process_pepmatch = subprocess.Popen([peptide_match, '-thr' , str(num_mismatches), mutpeps_file.name, reference_peptide_file_name], stdout = pepmatch_file)
     process_pepmatch.communicate() # now wait
     pepmatch_file.close()
     return pepmatch_file
@@ -1030,8 +1028,7 @@ def run_netMHCpan(HLA_alleles, netMHCpan3_0, peptide_file, tmp_dir, webserver, k
     print_ifnot_webserver('\tRunning NetMHCpan', webserver)
     netMHCpan_start = datetime.now()
     netMHC_file = NamedTemporaryFile(delete = False, dir = tmp_dir)
-    popen_args = [netMHCpan3_0, '-p', '-a', unique_alleles, '-f', peptide_file.name]
-    process_netMHC = subprocess.Popen(popen_args, stdout = netMHC_file)
+    process_netMHC = subprocess.Popen([netMHCpan3_0, '-p', '-a', unique_alleles, '-f', peptide_file.name], stdout = netMHC_file)
     process_netMHC.communicate() # now wait
     netMHC_file.close()
 
@@ -1576,14 +1573,9 @@ def read_options(argv):
     liftover = 'Yes' if '-g' in opts.keys() else None
     num_mismatches = opts['-m'] if '-m' in opts.keys() else 4
     assembly = opts['-A'] if '-A' in opts.keys() else 'GRCh38'
-<<<<<<< HEAD
-    fork = opts['-F'] if '-F' in opts.keys() else 1
-
-=======
     fork = opts['-F'] if '-F' in opts.keys() else 2
     if int(fork) <= 1:
         usage(); sys.exit('VEP fork number must be greater than 1')
->>>>>>> origin/master
 
     # Create and fill input named-tuple
     Input = namedtuple('input', ['vcf_file', 'peptide_length', 'output', 'logfile', 'HLA_alleles', 'config', 'expression_file', 'fasta_file_name', 'webserver', 'outdir', 'keep_temp', 'prefix', 'print_mismatch', 'liftover', 'expression_type', 'num_mismatches', 'assembly', 'fork'])
