@@ -445,7 +445,7 @@ def extract_allele_frequency(vcf_sorted_file, webserver, variant_caller):
                 genomic_position = columns[1].strip()
                 reference_allele = columns[3].strip()
                 altered_allele = columns[4].strip()
-                format_fields = columns[8].split(':')
+                format_fields = columns[8].strip().split(':')
                 if not len(reference_allele) == len(altered_allele):
                     altered_allele = altered_allele[1:] if len(reference_allele) < len(altered_allele) else altered_allele
                     altered_allele = '-' if len(reference_allele) > len(altered_allele) else altered_allele
