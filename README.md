@@ -102,12 +102,12 @@ preparation read the [MuPeXI User Manual](/doc/MuPeXI_User_Manual.md)
 ## Contact   
 
 Anne-Mette Bjerregaard  
-ambj@cbs.dtu.dk
+ambj@bioinformatics.dtu.dk
 
 or 
 
 Aron Charles Eklund  
-eklund@cbs.dtu.dk
+eklund@bioinformatics.dtu.dk
 
 
 Department of Bio and Health Informatics  
