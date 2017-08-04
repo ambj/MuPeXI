@@ -445,13 +445,14 @@ def extract_allele_frequency(vcf_sorted_file, webserver, variant_caller):
                 genomic_position = columns[1].strip()
                 reference_allele = columns[3].strip()
                 altered_allele = columns[4].strip()
+                format_fields = columns[8].strip().split(':')
                 if not len(reference_allele) == len(altered_allele):
                     altered_allele = altered_allele[1:] if len(reference_allele) < len(altered_allele) else altered_allele
                     altered_allele = '-' if len(reference_allele) > len(altered_allele) else altered_allele
                 if variant_caller == 'MuTect':
-                    allele_fraction = columns[9].split(':')[4].strip() # GT:AD:BQ:DP:FA
+                    allele_fraction = columns[9].split(':')[format_fields.index('FA')].strip() # GT:AD:BQ:DP:FA
                 elif variant_caller == 'MuTect2':
-                    allele_fraction = columns[9].split(':')[2].strip() # GT:AD:AF:ALT_F1R2:ALT_F2R1:FOXOG:QSS:REF_F1R2:REF_F2R1
+                    allele_fraction = columns[9].split(':')[format_fields.index('AD')].strip() # GT:AD:AF:ALT_F1R2:ALT_F2R1:FOXOG:QSS:REF_F1R2:REF_F2R1
                 ID = '{chromosome}_{genomic_position}_{altered_allele}'.format(
                     chromosome = chromosome, 
                     genomic_position = genomic_position if not altered_allele == '-' else int(genomic_position) + 1,
@@ -519,6 +520,7 @@ def build_vep_info(vep_file, webserver):
             # save relevant information from line 
             mutation_consequence = line[6].split(',')[0].strip()
             chr_, genome_pos = line[1].split(':')
+            genome_pos = genome_pos.strip()
             alt_allele = line[2].strip()
             geneID = line[3].strip()
             transID = line[4].strip()
@@ -666,7 +668,7 @@ def peptide_extraction(peptide_lengths, vep_info, proteome_reference, genome_ref
                 peptide_mutation_position = peptide_mutation_position_annotation(mutpeps, peptide_sequence_info.mutation_position, p_length)
                 peptide_info, intermediate_peptide_counters = peptide_selection(normpeps, mutpeps, peptide_mutation_position, intermediate_peptide_counters, peptide_sequence_info, peptide_info, mutation_info, p_length, reference_peptides)
 
-            # Accumulate counters 
+            # Accumulate counters
             peptide_count += intermediate_peptide_counters['mutation_peptide_count']
             normal_match_count += intermediate_peptide_counters['mutation_normal_match_count']
             removal_count += intermediate_peptide_counters['peptide_removal_count']
