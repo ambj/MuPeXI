@@ -252,8 +252,6 @@ def build_proteome_reference(proteome_ref_file, webserver, species):
         for line in f.readlines(): 
             if line.startswith('>'): # fasta header (>)
                 # Save gene and transcript Ensembl ID (re = regular expression)
-                #geneID = re.search(r'gene:(ENSG\d+)', line).group(1).strip()
-                #transID = re.search(r'transcript:(ENST\d+)', line).group(1).strip()
                 geneID = re.search(r'gene:({}\d+)'.format(species.gene_id_prefix), line).group(1).strip()
                 transID = re.search(r'transcript:({}\d+)'.format(species.trans_id_prefix), line).group(1).strip()
                 # Insert gene and transcript ID in directory, assign empty value
@@ -448,7 +446,6 @@ def create_vep_compatible_vcf(vcf_file, webserver, keep_tmp, outdir, file_prefix
 
     vcf_file_name = vcf_file if liftover == None else vcf_file.name
     vcf_sorted_file = NamedTemporaryFile(delete = False, dir = tmp_dir)
-    # p1 = subprocess.Popen(['awk', '{gsub(/^chr/,"");gsub(/^0/,"");print}', vcf_file_name], stdout = subprocess.PIPE)
     p1 = subprocess.Popen(['awk', awk_line, vcf_file_name], stdout = subprocess.PIPE)
     p2 = subprocess.Popen(['grep', '-E', '#|PASS'], stdin = p1.stdout, stdout = vcf_sorted_file)
     p2.communicate()
@@ -483,10 +480,8 @@ def extract_allele_frequency(vcf_sorted_file, webserver, variant_caller):
                     altered_allele = altered_allele[1:] if len(reference_allele) < len(altered_allele) else altered_allele
                     altered_allele = '-' if len(reference_allele) > len(altered_allele) else altered_allele
                 if variant_caller == 'MuTect':
-                    #allele_fraction = columns[9].split(':')[4].strip() # GT:AD:BQ:DP:FA
                     allele_fraction = columns[9].split(':')[format_fields.index('FA')].strip() # GT:AD:BQ:DP:FA
                 elif variant_caller == 'MuTect2':
-                    #allele_fraction = columns[9].split(':')[2].strip() # GT:AD:AF:ALT_F1R2:ALT_F2R1:FOXOG:QSS:REF_F1R2:REF_F2R1
                     allele_fraction = columns[9].split(':')[format_fields.index('AF')].strip() # GT:AD:AF:ALT_F1R2:ALT_F2R1:FOXOG:QSS:REF_F1R2:REF_F2R1
                 ID = '{chromosome}_{genomic_position}_{altered_allele}'.format(
                     chromosome = chromosome, 
