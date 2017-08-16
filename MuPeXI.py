@@ -56,7 +56,7 @@ def main(args):
 
     variant_caller = detect_variant_caller(input_.vcf_file, input_.webserver)
     vcf_file = liftover_hg19(input_.liftover, input_.webserver, input_.vcf_file, input_.keep_temp, input_.outdir, input_.prefix, tmp_dir, input_.config)
-    vcf_sorted_file = create_vep_compatible_vcf(vcf_file, input_.webserver, input_.keep_temp, input_.outdir, input_.prefix, tmp_dir, input_.liftover, species)
+    vcf_sorted_file = create_vep_compatible_vcf(vcf_file, input_.webserver, input_.keep_temp, input_.outdir, input_.prefix, tmp_dir, input_.liftover)
     allele_fractions = extract_allele_frequency(vcf_sorted_file, input_.webserver, variant_caller)
     vep_file = run_vep(vcf_sorted_file, input_.webserver, tmp_dir, paths.vep_path, paths.vep_dir, input_.keep_temp, input_.prefix, input_.outdir, input_.assembly, input_.fork, species)
     vep_info, vep_counters, transcript_info, protein_positions = build_vep_info(vep_file, input_.webserver)
@@ -443,16 +443,14 @@ def liftover_hg19(liftover, webserver, vcf_file, keep_tmp, outdir, file_prefix, 
 
 
 
-def create_vep_compatible_vcf(vcf_file, webserver, keep_tmp, outdir, file_prefix, tmp_dir, liftover, species):
+def create_vep_compatible_vcf(vcf_file, webserver, keep_tmp, outdir, file_prefix, tmp_dir, liftover):
     print_ifnot_webserver('\tChange VCF to the VEP compatible', webserver)
         # remove chr and 0 so only integers are left, (chromosome: 1, 2, 3 instaed og chr01, chr02, chr03)
         # only PASS lines are used 
-    # generate awk line compatible to species, only human or mouse 
-    awk_line = '{gsub(/^chr/,"");gsub(/^0/,"");print}' if species.species == 'homo_sapiens' else '{gsub(/^chr/,"");gsub(/^M/,"MT");print}'
 
     vcf_file_name = vcf_file if liftover == None else vcf_file.name
     vcf_sorted_file = NamedTemporaryFile(delete = False, dir = tmp_dir)
-    p1 = subprocess.Popen(['awk', awk_line, vcf_file_name], stdout = subprocess.PIPE)
+    p1 = subprocess.Popen(['awk', '{gsub(/^chr/,"");gsub(/^0/,"");print}', vcf_file_name], stdout = subprocess.PIPE)
     p2 = subprocess.Popen(['grep', '-E', '#|PASS'], stdin = p1.stdout, stdout = vcf_sorted_file)
     p2.communicate()
     vcf_sorted_file.close()
