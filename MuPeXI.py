@@ -251,6 +251,9 @@ def build_proteome_reference(proteome_ref_file, webserver, species):
     with open(proteome_ref_file) as f:
         for line in f.readlines(): 
             if line.startswith('>'): # fasta header (>)
+                # test species compatibility 
+                if not species.gene_id_prefix in line:
+                    usage(); sys.exit('ERROR: species prefix {} for {} not found in proteome reference file\nINFO: use --species option if another species than {} is used'.format(species.gene_id_prefix, species.species, species.species))
                 # Save gene and transcript Ensembl ID (re = regular expression)
                 geneID = re.search(r'gene:({}\d+)'.format(species.gene_id_prefix), line).group(1).strip()
                 transID = re.search(r'transcript:({}\d+)'.format(species.trans_id_prefix), line).group(1).strip()
@@ -271,6 +274,9 @@ def build_genome_reference(genome_ref_file, webserver, species):
     with open(genome_ref_file) as f:
         for line in f.readlines(): 
             if line.startswith('>'): # fasta header (>)
+                # test species compatibility 
+                if not species.gene_id_prefix in line:
+                    usage(); sys.exit('ERROR: species prefix {} for {} not found in cDNA reference file\nINFO: use --species option if another species than {} is used'.format(species.gene_id_prefix, species.species, species.species))
                 # Save gene and transcript Ensembl ID (re = regular expression)
                 geneID = re.search(r'gene:({}\d+)'.format(species.gene_id_prefix), line).group(1).strip()
                 transID = re.search(r'>({}\d+)'.format(species.trans_id_prefix), line).group(1).strip()
