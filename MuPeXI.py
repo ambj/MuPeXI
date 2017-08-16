@@ -33,16 +33,17 @@ def main(args):
     webserver_err_redirection(input_.webserver)
 
     # Check input file paths 
+    species = define_species(input_.species)
     peptide_length = extract_peptide_length(input_.peptide_length)
-    paths = check_input_paths(input_, peptide_length)
+    paths = check_input_paths(input_, peptide_length, species)
     tmp_dir = create_tmp_dir()
     www_tmp_dir = create_webserver_tmp_dir(input_.webserver)
 
     # Read in data 
     print_ifnot_webserver('\nReading in data', input_.webserver)
-    expression = build_expression(input_.expression_file, input_.webserver, input_.expression_type)
-    proteome_reference, sequence_count = build_proteome_reference(paths.proteome_ref_file, input_.webserver)
-    genome_reference = build_genome_reference(paths.genome_ref_file, input_.webserver)
+    expression = build_expression(input_.expression_file, input_.webserver, input_.expression_type, species)
+    proteome_reference, sequence_count = build_proteome_reference(paths.proteome_ref_file, input_.webserver, species)
+    genome_reference = build_genome_reference(paths.genome_ref_file, input_.webserver, species)
     cancer_genes = build_cancer_genes(paths.cosmic_file, input_.webserver)
 
 
@@ -55,9 +56,9 @@ def main(args):
 
     variant_caller = detect_variant_caller(input_.vcf_file, input_.webserver)
     vcf_file = liftover_hg19(input_.liftover, input_.webserver, input_.vcf_file, input_.keep_temp, input_.outdir, input_.prefix, tmp_dir, input_.config)
-    vcf_sorted_file = create_vep_compatible_vcf(vcf_file, input_.webserver, tmp_dir, input_.liftover)
+    vcf_sorted_file = create_vep_compatible_vcf(vcf_file, input_.webserver, input_.keep_temp, input_.outdir, input_.prefix, tmp_dir, input_.liftover, species)
     allele_fractions = extract_allele_frequency(vcf_sorted_file, input_.webserver, variant_caller)
-    vep_file = run_vep(vcf_sorted_file, input_.webserver, tmp_dir, paths.vep_path, paths.vep_dir, input_.keep_temp, input_.prefix, input_.outdir, input_.assembly, input_.fork)
+    vep_file = run_vep(vcf_sorted_file, input_.webserver, tmp_dir, paths.vep_path, paths.vep_dir, input_.keep_temp, input_.prefix, input_.outdir, input_.assembly, input_.fork, species)
     vep_info, vep_counters, transcript_info, protein_positions = build_vep_info(vep_file, input_.webserver)
 
     end_time_vep = datetime.now()
@@ -115,7 +116,7 @@ CHECK FILE PATHS
 """
 
 
-def check_input_paths(input_, peptide_lengths):
+def check_input_paths(input_, peptide_lengths, species):
     file_names = defaultdict(dict) # empty dictionary
     category_list, id_list = create_lits_for_path_checkup(peptide_lengths)
 
@@ -135,7 +136,7 @@ def check_input_paths(input_, peptide_lengths):
         check_path(input_.expression_file)
         check_file_size(input_.webserver, input_.expression_file, 'expression file')
 
-    check_vcf_file(input_.vcf_file, input_.liftover, input_.assembly, input_.webserver)
+    check_vcf_file(input_.vcf_file, input_.liftover, species, input_.webserver)
     check_path(input_.outdir)
 
     # Create and fill named tuple
@@ -176,7 +177,7 @@ def check_path(path):
 
 
 
-def check_vcf_file(vcf_file, liftover, assembly, webserver):
+def check_vcf_file(vcf_file, liftover, species, webserver):
     check_path(vcf_file)
 
     # Exit program if file size are exceeded 
@@ -188,12 +189,13 @@ def check_vcf_file(vcf_file, liftover, assembly, webserver):
             usage(); sys.exit('ERROR: {} file is not a VCF file\n'.format(vcf_file))
         for line in f.readlines():
             if not webserver == None:
-                if '##reference' in line:
-                    if 'GRCh37' in line or 'hg19' in line or 'HG19' in line:
-                        if liftover == None and assembly == "GRCh38":
-                            usage(); sys.exit('ERROR: The VCF file is aligned to HG19 / GRCh37\nINFO: {}\nINFO: Please run NGS analysis aligning to GRCh38, use the hg19 liftover option (-g/--hg19), or the GRCh37 prediction option (-a/ --assembly GRCh37)\n'.format(line.strip()))
-                        else :
-                            continue
+                if species == 'human':
+                    if '##reference' in line:
+                        if 'GRCh37' in line or 'hg19' in line or 'HG19' in line:
+                            if liftover == None and species.assembly == "GRCh38":
+                                usage(); sys.exit('ERROR: The VCF file is aligned to HG19 / GRCh37\nINFO: {}\nINFO: Please run NGS analysis aligning to GRCh38, use the hg19 liftover option (-g/--hg19), or the GRCh37 prediction option (-a/ --assembly GRCh37)\n'.format(line.strip()))
+                            else :
+                                continue
             if '#CHROM' in line:
                 break
             elif not line.startswith('##'):
@@ -241,7 +243,7 @@ READ IN DATA
 
 """
 
-def build_proteome_reference(proteome_ref_file, webserver):
+def build_proteome_reference(proteome_ref_file, webserver, species):
     print_ifnot_webserver('\tCreating proteome reference dictionary', webserver)
     proteome_reference = defaultdict(dict) # empty dictionary 
     sequence_count = 0 # sequence count
@@ -250,8 +252,10 @@ def build_proteome_reference(proteome_ref_file, webserver):
         for line in f.readlines(): 
             if line.startswith('>'): # fasta header (>)
                 # Save gene and transcript Ensembl ID (re = regular expression)
-                geneID = re.search(r'gene:(ENSG\d+)', line).group(1).strip()
-                transID = re.search(r'transcript:(ENST\d+)', line).group(1).strip()
+                #geneID = re.search(r'gene:(ENSG\d+)', line).group(1).strip()
+                #transID = re.search(r'transcript:(ENST\d+)', line).group(1).strip()
+                geneID = re.search(r'gene:({}\d+)'.format(species.gene_id_prefix), line).group(1).strip()
+                transID = re.search(r'transcript:({}\d+)'.format(species.trans_id_prefix), line).group(1).strip()
                 # Insert gene and transcript ID in directory, assign empty value
                 proteome_reference[geneID][transID] = ""
                 sequence_count += 1
@@ -262,7 +266,7 @@ def build_proteome_reference(proteome_ref_file, webserver):
 
 
 
-def build_genome_reference(genome_ref_file, webserver):
+def build_genome_reference(genome_ref_file, webserver, species):
     print_ifnot_webserver('\tCreating genome reference dictionary', webserver)
     genome_reference = defaultdict(dict) # empty dictionary 
 
@@ -270,8 +274,8 @@ def build_genome_reference(genome_ref_file, webserver):
         for line in f.readlines(): 
             if line.startswith('>'): # fasta header (>)
                 # Save gene and transcript Ensembl ID (re = regular expression)
-                geneID = re.search(r'gene:(ENSG\d+)', line).group(1).strip()
-                transID = re.search(r'>(ENST\d+)', line).group(1).strip()
+                geneID = re.search(r'gene:({}\d+)'.format(species.gene_id_prefix), line).group(1).strip()
+                transID = re.search(r'>({}\d+)'.format(species.trans_id_prefix), line).group(1).strip()
                 # Insert gene and transcript ID in directory, assign empty value
                 genome_reference[geneID][transID] = ""
             else:
@@ -281,7 +285,7 @@ def build_genome_reference(genome_ref_file, webserver):
 
 
 
-def build_expression(expression_file, webserver, expression_type):
+def build_expression(expression_file, webserver, expression_type, species):
     if not expression_file == None :
         print_ifnot_webserver('\tCreating expression file dictionary', webserver)
         expression = defaultdict(dict) # empty dictionary
@@ -290,7 +294,7 @@ def build_expression(expression_file, webserver, expression_type):
             for line in f.readlines():
                 line = line.split()
                 if not line[0] == 'target_id':
-                    check_expression_file_type(expression_type, line)
+                    check_expression_file_type(expression_type, line, species)
                     # save line information
                     if '.' in line[0] : # example: ENST00000415118.3
                         ensembl_id = line[0].split('.')[0]
@@ -306,12 +310,33 @@ def build_expression(expression_file, webserver, expression_type):
 
 
 
-def check_expression_file_type(expression_type, line):
+def define_species(species):
+    if species == 'human' :
+        trans_id_prefix = 'ENST'
+        gene_id_prefix = 'ENSG'
+        assembly = 'GRCh38'
+        species = 'homo_sapiens'
+    elif species == 'mouse' :
+        trans_id_prefix = 'ENSMUST'
+        gene_id_prefix = 'ENSMUSG'
+        assembly = 'GRCm38'
+        species = 'mus_musculus'
+    else :
+        usage(); sys.exit('ERROR:\tSpecies {} not recognized \n'.format(species))
+
+    Species = namedtuple('species', ['gene_id_prefix', 'trans_id_prefix', 'assembly', 'species'])
+    species = Species(gene_id_prefix, trans_id_prefix, assembly, species)
+
+    return species
+
+
+
+def check_expression_file_type(expression_type, line, species):
     if expression_type == 'gene' :
-        if 'ENST' in line[0]:
+        if species.trans_id_prefix in line[0]:
             usage(); sys.exit('ERROR:\tEnsembl transcript id detected: {}\n\tWhile expression type option "gene" was used\n'.format(line[0]))
     if expression_type == 'transcript' :
-        if 'ENSG' in line[0]:
+        if species.gene_id_prefix in line[0]:
             usage(); sys.exit('ERROR:\tEnsembl gene id detected: {}\n\tWhile expression type option "transcript" was used\n'.format(line[0]))
 
 
@@ -347,6 +372,7 @@ def extract_peptide_length(peptide_length):
         else:
             peptide_length_list.append(int(peptide_length))
     return peptide_length_list
+
 
 
 
@@ -413,16 +439,23 @@ def liftover_hg19(liftover, webserver, vcf_file, keep_tmp, outdir, file_prefix, 
 
 
 
-def create_vep_compatible_vcf(vcf_file, webserver, tmp_dir, liftover):
+def create_vep_compatible_vcf(vcf_file, webserver, keep_tmp, outdir, file_prefix, tmp_dir, liftover, species):
     print_ifnot_webserver('\tChange VCF to the VEP compatible', webserver)
         # remove chr and 0 so only integers are left, (chromosome: 1, 2, 3 instaed og chr01, chr02, chr03)
         # only PASS lines are used 
+    # generate awk line compatible to species, only human or mouse 
+    awk_line = '{gsub(/^chr/,"");gsub(/^0/,"");print}' if species.species == 'homo_sapiens' else '{gsub(/^chr/,"");gsub(/^M/,"MT");print}'
+
     vcf_file_name = vcf_file if liftover == None else vcf_file.name
     vcf_sorted_file = NamedTemporaryFile(delete = False, dir = tmp_dir)
-    p1 = subprocess.Popen(['awk', '{gsub(/^chr/,"");gsub(/^0/,"");print}', vcf_file_name], stdout = subprocess.PIPE)
+    # p1 = subprocess.Popen(['awk', '{gsub(/^chr/,"");gsub(/^0/,"");print}', vcf_file_name], stdout = subprocess.PIPE)
+    p1 = subprocess.Popen(['awk', awk_line, vcf_file_name], stdout = subprocess.PIPE)
     p2 = subprocess.Popen(['grep', '-E', '#|PASS'], stdin = p1.stdout, stdout = vcf_sorted_file)
     p2.communicate()
     vcf_sorted_file.close()
+
+    keep_temp_file(keep_tmp, 'vcf', vcf_sorted_file.name, file_prefix, outdir, None, 'vep_compatible_vcf')
+
     return vcf_sorted_file
 
 
@@ -462,16 +495,19 @@ def extract_allele_frequency(vcf_sorted_file, webserver, variant_caller):
 
 
 
-def run_vep(vcf_sorted_file, webserver, tmp_dir, vep_path, vep_dir, keep_tmp, file_prefix, outdir, assembly, fork):
+def run_vep(vcf_sorted_file, webserver, tmp_dir, vep_path, vep_dir, keep_tmp, file_prefix, outdir, input_assembly, fork, species):
     print_ifnot_webserver('\tRunning VEP', webserver)
     vep_file = NamedTemporaryFile(delete = False, dir = tmp_dir)
+    
+    assembly = species.assembly if input_assembly == None else input_assembly
+
     popen_args = [
         vep_path, 
         '-fork', str(fork), 
         '--offline', 
         '--quiet', 
         '--assembly', assembly, 
-        '--species', 'homo_sapiens', 
+        '--species', species.species, 
         '--dir', vep_dir, 
         '-i', vcf_sorted_file.name, 
         '--force_overwrite',
@@ -532,7 +568,6 @@ def build_vep_info(vep_file, webserver):
             else :
                 prot_pos, prot_pos_to = line[9].strip(), None
             mutation_id = '{}_{}_{}'.format(chr_, genome_pos, alt_allele)
-
             # Generate dict of dicts (dependent on both mutation ID and gene ID)
             # then set the default value of the key to be a list and append the transcript id 
             transcript_info[mutation_id].setdefault(geneID,[]).append(transID)
@@ -1479,7 +1514,11 @@ def usage():
         -m, --mismatch-number   Maximum number of mismatches to search for in       4
                                 normal peptide match.
         -A, --assembly          The assembly version to run VEP.                    GRCh38
-        
+        -s, --species           Species to analyze (human / mouse)                  human
+                                If mouse is set default assembly is GRCm38.
+                                Remember to download the mus_musculus VEP cache
+                                and state mouse MHC alleles.
+
         Optional arguments affecting computational process:
         -F, --fork              Number of processors running VEP.                   2
 
@@ -1506,8 +1545,8 @@ def usage():
 def read_options(argv):
     try:
         optlist, args = getopt.getopt(argv,
-            'v:a:l:o:d:L:e:c:p:E:m:A:F:ftMwgh', 
-            ['input-file=', 'alleles=', 'length=', 'output-file=', 'out-dir=', 'log-file=', 'expression-file=', 'config-file=', 'prefix=', 'expression-type=', 'mismatch-number=','assembly=', 'fork=','make-fasta', 'keep-temp', 'mismatch-print', 'webserver', 'liftover','help'])
+            'v:a:l:o:d:L:e:c:p:E:m:A:F:s:ftMwgh', 
+            ['input-file=', 'alleles=', 'length=', 'output-file=', 'out-dir=', 'log-file=', 'expression-file=', 'config-file=', 'prefix=', 'expression-type=', 'mismatch-number=','assembly=', 'fork=','species=', 'make-fasta', 'keep-temp', 'mismatch-print', 'webserver', 'liftover','help'])
         if not optlist:
             print 'No options supplied'
             usage()
@@ -1534,7 +1573,8 @@ def read_options(argv):
         '-g': '--liftover',
         '-E': '--expression-type',
         '-A': '--assembly',
-        '-F': '--fork'
+        '-F': '--fork',
+        '-s': '--species'
     }
 
     # Create a dictionary of options and input from the options list
@@ -1570,14 +1610,15 @@ def read_options(argv):
     print_mismatch = 'Yes' if '-M' in opts.keys() else None
     liftover = 'Yes' if '-g' in opts.keys() else None
     num_mismatches = opts['-m'] if '-m' in opts.keys() else 4
-    assembly = opts['-A'] if '-A' in opts.keys() else 'GRCh38'
+    assembly = opts['-A'] if '-A' in opts.keys() else None
     fork = opts['-F'] if '-F' in opts.keys() else 2
     if int(fork) <= 1:
         usage(); sys.exit('VEP fork number must be greater than 1')
+    species = opts['-s'] if '-s' in opts.keys() else 'human'
 
     # Create and fill input named-tuple
-    Input = namedtuple('input', ['vcf_file', 'peptide_length', 'output', 'logfile', 'HLA_alleles', 'config', 'expression_file', 'fasta_file_name', 'webserver', 'outdir', 'keep_temp', 'prefix', 'print_mismatch', 'liftover', 'expression_type', 'num_mismatches', 'assembly', 'fork'])
-    inputinfo = Input(vcf_file, peptide_length, output, logfile, HLA_alleles, config, expression_file, fasta_file_name, webserver, outdir, keep_temp, prefix, print_mismatch, liftover, expression_type, num_mismatches, assembly, fork)
+    Input = namedtuple('input', ['vcf_file', 'peptide_length', 'output', 'logfile', 'HLA_alleles', 'config', 'expression_file', 'fasta_file_name', 'webserver', 'outdir', 'keep_temp', 'prefix', 'print_mismatch', 'liftover', 'expression_type', 'num_mismatches', 'assembly', 'fork', 'species'])
+    inputinfo = Input(vcf_file, peptide_length, output, logfile, HLA_alleles, config, expression_file, fasta_file_name, webserver, outdir, keep_temp, prefix, print_mismatch, liftover, expression_type, num_mismatches, assembly, fork, species)
 
     return inputinfo
 
