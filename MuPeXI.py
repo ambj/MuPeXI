@@ -137,6 +137,7 @@ def check_input_paths(input_, peptide_lengths, species):
         check_file_size(input_.webserver, input_.expression_file, 'expression file')
 
     check_vcf_file(input_.vcf_file, input_.liftover, species, input_.webserver)
+    check_netMHC_path(file_names['MHC'])
     check_path(input_.outdir)
 
     # Create and fill named tuple
@@ -200,6 +201,14 @@ def check_vcf_file(vcf_file, liftover, species, webserver):
                 break
             elif not line.startswith('##'):
                 usage(); sys.exit('ERROR: {} file is not a VCF file, #CHROM header is missing\n'.format(vcf_file))
+
+
+def check_netMHC_path(netMHC_path):
+    if not 'netMHCpan' in netMHC_path:
+        usage(); sys.exit('ERROR: netMHCpan not stated in path {} \n'.format(netMHC_path))
+    if not any(x in netMHC_path for x in ['3.0','4.0']):
+        usage(); sys.exit('ERROR:\tnetMHCpan version 3.0 or 4.0 not stated in path {}\n\tOnly these versions are supported'.format(netMHC_path))
+
 
 
 def check_file_size(webserver, input_file_path, file_tag):
