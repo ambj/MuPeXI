@@ -1,4 +1,4 @@
- #!/usr/bin/env python
+#!/usr/bin/env python
 
 """
 MuPeXI - Mutant peptide extractor and Informer
@@ -1097,8 +1097,10 @@ def build_netMHC(netMHC_file, webserver):
                     # save information
                     HLA_allele = line[1].replace('*','')
                     peptide = line[2]
-                    affinity = float(line[12])
-                    rank = float(line[13])
+                    # affinity = float(line[12]) # for 3.0 
+                    affinity = 0
+                    # rank = float(line[13]) # for 3.0
+                    rank = float(line[12])
                     # fill tuple
                     netmhc_info = NetMHCInfo(affinity, rank)
                     # fill dictionary
@@ -1117,11 +1119,11 @@ def write_output_file(peptide_info, expression, net_mhc, unique_alleles, cancer_
     df = pandas.DataFrame(columns = (
         'HLA_allele',
         'Norm_peptide',
-        'Norm_MHCAffinity',
-        'Norm_MHCrank',
+        # 'Norm_MHCAffinity',
+        'Norm_MHCrank_EL',
         'Mut_peptide',
-        'Mut_MHCAffinity',
-        'Mut_MHCrank',
+        # 'Mut_MHCAffinity',
+        'Mut_MHCrank_EL',
         'Gene_ID',
         'Transcript_ID',
         'Amino_Acid_Change',
@@ -1184,10 +1186,10 @@ def write_output_file(peptide_info, expression, net_mhc, unique_alleles, cancer_
                 df.loc[row] = [
                 hla, 
                 print_normal_peptide, 
-                normal_netmhc_info.affinity, 
+                # normal_netmhc_info.affinity, 
                 normal_netmhc_info.rank, 
                 mutant_petide, 
-                mutant_netmhc_info.affinity, 
+                # mutant_netmhc_info.affinity, 
                 mutant_netmhc_info.rank, 
                 mutation_info.gene_id, 
                 ','.join(transcript_ids), 
