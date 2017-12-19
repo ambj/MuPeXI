@@ -94,11 +94,12 @@ def main(args):
 
     # run netMHCpan
     unique_mutant_peptide_count, peptide_file = write_peptide_file(peptide_info, tmp_dir, input_.webserver, input_.keep_temp, input_.prefix, input_.outdir)
-    netMHCpan_runtime, unique_alleles, netMHC_file = run_netMHCpan(input_.HLA_alleles, paths.netMHC, peptide_file, tmp_dir, input_.webserver, input_.keep_temp, input_.prefix, input_.outdir)
-    net_mhc = build_netMHC(netMHC_file, input_.webserver)
+    netMHCpan_runtime, unique_alleles, netMHC_EL_file, netMHC_BA_file = run_netMHCpan(input_.HLA_alleles, paths.netMHC, peptide_file, tmp_dir, input_.webserver, input_.keep_temp, input_.prefix, input_.outdir, input_.netmhc_anal)
+    net_mhc_BA = build_netMHC(netMHC_BA_file, input_.webserver, 'YES') if not netMHC_BA_file == None else None
+    net_mhc_EL = build_netMHC(netMHC_EL_file, input_.webserver, 'NO')
 
     # write files 
-    output_file = write_output_file(peptide_info, expression, net_mhc, unique_alleles, cancer_genes, tmp_dir, input_.webserver, input_.print_mismatch, allele_fractions, input_.expression_type, transcript_info, reference_peptides, proteome_reference, protein_positions, version)
+    output_file = write_output_file(peptide_info, expression, net_mhc_BA, net_mhc_EL, unique_alleles, cancer_genes, tmp_dir, input_.webserver, input_.print_mismatch, allele_fractions, input_.expression_type, transcript_info, reference_peptides, proteome_reference, protein_positions, version)
     log_file = write_log_file(sys.argv, peptide_length, sequence_count, reference_peptide_counters, vep_counters, peptide_counters, start_time_mupex, start_time_mupei, start_time, end_time_mupex, input_.HLA_alleles, netMHCpan_runtime, unique_mutant_peptide_count, unique_alleles, tmp_dir, input_.webserver, version)
 
     # clean up
@@ -206,7 +207,8 @@ def check_vcf_file(vcf_file, liftover, species, webserver):
 def check_netMHC_path(netMHC_path):
     if not 'netMHCpan' in netMHC_path:
         usage(); sys.exit('ERROR: netMHCpan not stated in path {} \n'.format(netMHC_path))
-    if not any(x in netMHC_path for x in ['netMHCpan-3.0','netMHCpan-4.0']):
+    #if not any(x in netMHC_path for x in ['netMHCpan-3.0','netMHCpan-4.0']):
+    if not 'netMHCpan-4.0' in netMHC_path:
         usage(); sys.exit('ERROR:\tnetMHCpan version 3.0 or 4.0 not stated in path {}\n\tOnly these versions are supported'.format(netMHC_path))
 
 
@@ -1064,98 +1066,149 @@ def write_peptide_file(peptide_info, tmp_dir, webserver, keep_tmp, file_prefix, 
 
 
 
-def run_netMHCpan(HLA_alleles, netMHCpan_path, peptide_file, tmp_dir, webserver, keep_tmp, file_prefix, outdir):
+def run_netMHCpan(HLA_alleles, netMHCpan_path, peptide_file, tmp_dir, webserver, keep_tmp, file_prefix, outdir, netmhc_anal):
     # isolate unique HLAalleles 
     unique_alleles_set = set(HLA_alleles.split(','))
     unique_alleles = ','.join(map(str, unique_alleles_set))
 
-    print_ifnot_webserver('\tRunning NetMHCpan', webserver)
     netMHCpan_start = datetime.now()
-    netMHC_file = NamedTemporaryFile(delete = False, dir = tmp_dir)
-    process_netMHC = subprocess.Popen([netMHCpan_path, '-p', '-a', unique_alleles, '-f', peptide_file.name], stdout = netMHC_file)
-    process_netMHC.communicate() # now wait
-    netMHC_file.close()
 
-    keep_temp_file(keep_tmp, 'txt', netMHC_file.name, file_prefix, outdir, None, 'netMHCpan')
+    print_ifnot_webserver('\tRunning NetMHCpan eluted ligand prediction', webserver)
+    netMHC_EL_file = NamedTemporaryFile(delete = False, dir = tmp_dir)
+    process_netMHC_EL = subprocess.Popen([netMHCpan_path, '-p', '-a', unique_alleles, '-f', peptide_file.name], stdout = netMHC_EL_file)
+    process_netMHC_EL.communicate() # now wait
+    netMHC_EL_file.close()
+    keep_temp_file(keep_tmp, 'txt', netMHC_EL_file.name, file_prefix, outdir, None, 'netMHCpan_EL')
+
+    # running binding affinity prediction if user specified all analysis 
+    if not netmhc_anal == None:
+        netMHC_BA_file = NamedTemporaryFile(delete = False, dir = tmp_dir)
+        print_ifnot_webserver('\tRunning NetMHCpan binding affinity prediction', webserver)
+        process_netMHC = subprocess.Popen([netMHCpan_path, '-p', '-a', unique_alleles, '-BA', '-f', peptide_file.name], stdout = netMHC_BA_file)
+        process_netMHC.communicate() # now wait
+        netMHC_BA_file.close()
+        keep_temp_file(keep_tmp, 'txt', netMHC_BA_file.name, file_prefix, outdir, None, 'netMHCpan_BA')
+    else:
+        netMHC_BA_file = None
 
     netMHCpan_runtime = datetime.now() - netMHCpan_start
-    return netMHCpan_runtime, unique_alleles, netMHC_file
+    return netMHCpan_runtime, unique_alleles, netMHC_EL_file, netMHC_BA_file
 
 
 
-def build_netMHC(netMHC_file, webserver):
-    print_ifnot_webserver ('\tCreating NetMHCpan file dictionary', webserver)
+def build_netMHC(netMHC_file, webserver, affinity):
+    netmhc_anal = 'binding affinity prediction' if affinity == 'YES' else 'eluted ligand prediction'
+    print('\tCreating NetMHCpan {} file dictionary for'.format(netmhc_anal))
     net_mhc = defaultdict(dict) # empty dictionary
-    NetMHCInfo = namedtuple('NetMHCInfo', ['affinity', 'rank'])
+    NetMHCInfo = namedtuple('NetMHCInfo', ['affinity', 'rank', 'score'])
 
-    with open(netMHC_file.name) as f:
-        for line in f.readlines():
-            if re.search(r'^\s+1\s', line):
-                line = [x.strip() for x in line.split()]
-                if 'PEPLIST' in line[10]:
-                    line[2] = '-' * len(line[2]) if line[2].startswith('XXXX') else line[2]
-                    # save information
-                    HLA_allele = line[1].replace('*','')
-                    peptide = line[2]
-                    # affinity = float(line[12]) # for 3.0 
-                    affinity = 0
-                    # rank = float(line[13]) # for 3.0
-                    rank = float(line[12])
-                    # fill tuple
-                    netmhc_info = NetMHCInfo(affinity, rank)
-                    # fill dictionary
-                    net_mhc[HLA_allele][peptide] = netmhc_info
+    # Account for different column output between netMHCpan output when running affinity predictions or not 
+    af = 12 if affinity == 'YES' else None
+    r = 13 if affinity == 'YES' else 12 
+
+    # Build dictionary 
+    if not netMHC_file == None:
+        with open(netMHC_file.name) as f:
+            for line in f.readlines():
+                if re.search(r'^\s+1\s', line):
+                    line = [x.strip() for x in line.split()]
+                    if 'PEPLIST' in line[10]:
+                        line[2] = '-' * len(line[2]) if line[2].startswith('XXXX') else line[2]
+                        # save information
+                        HLA_allele = line[1].replace('*','')
+                        peptide = line[2]
+                        affinity = float(line[af]) if not af == None else None
+                        rank = float(line[r])
+                        score = float(line[11]) 
+                        # fill tuple
+                        netmhc_info = NetMHCInfo(affinity, rank, score)
+                        # fill dictionary
+                        net_mhc[HLA_allele][peptide] = netmhc_info
+    else:
+        net_mhc = None
 
     return net_mhc
 
 
 
-def write_output_file(peptide_info, expression, net_mhc, unique_alleles, cancer_genes, tmp_dir, webserver, print_mismatch, allele_fractions, expression_file_type, transcript_info, reference_peptides, proteome_reference, protein_positions, version):
+def write_output_file(peptide_info, expression, net_mhc_BA, net_mhc_EL, unique_alleles, cancer_genes, tmp_dir, webserver, print_mismatch, allele_fractions, expression_file_type, transcript_info, reference_peptides, proteome_reference, protein_positions, version):
     print_ifnot_webserver('\tWriting output file', webserver)
     printed_ids = set()
     row = 0
 
     # Create data frame 
-    df = pandas.DataFrame(columns = (
-        'HLA_allele',
-        'Norm_peptide',
-        # 'Norm_MHCAffinity',
-        'Norm_MHCrank_EL',
-        'Mut_peptide',
-        # 'Mut_MHCAffinity',
-        'Mut_MHCrank_EL',
-        'Gene_ID',
-        'Transcript_ID',
-        'Amino_Acid_Change',
-        'Allele_Frequency',
-        'Mismatches',
-        'peptide_position',
-        'Chr',
-        'Genomic_Position',
-        'Protein_position',
-        'Mutation_Consequence',
-        'Gene_Symbol',
-        'Cancer_Driver_Gene',
-        'Proteome_Peptide_Match',
-        'Expression_Level',
-        'Mutant_affinity_score',
-        'Normal_affinity_score',
-        'Expression_score',
-        'priority_Score'), )
+    if net_mhc_BA == None:
+        df = pandas.DataFrame(columns = (
+            'HLA_allele',
+            'Norm_peptide',
+            'Norm_MHCrank_EL',
+            'Mut_peptide',
+            'Mut_MHCrank_EL',
+            'Gene_ID',
+            'Transcript_ID',
+            'Amino_Acid_Change',
+            'Allele_Frequency',
+            'Mismatches',
+            'peptide_position',
+            'Chr',
+            'Genomic_Position',
+            'Protein_position',
+            'Mutation_Consequence',
+            'Gene_Symbol',
+            'Cancer_Driver_Gene',
+            'Proteome_Peptide_Match',
+            'Expression_Level',
+            'Mutant_affinity_score',
+            'Normal_affinity_score',
+            'Expression_score',
+            'priority_Score'), )
+    else:
+        df = pandas.DataFrame(columns = (
+            'HLA_allele',
+            'Norm_peptide',
+            'Norm_MHCrank_EL',
+            'Norm_MHCscore_EL',
+            'Norm_MHCaffinity',
+            'Norm_MHCrank_BA',
+            'Norm_MHCscore_BA',
+            'Mut_peptide',
+            'Mut_MHCrank_EL',
+            'Mut_MHCscore_EL',
+            'Mut_MHCaffinity',
+            'Mut_MHCrank_BA',
+            'Mut_MHCscore_BA',
+            'Gene_ID',
+            'Transcript_ID',
+            'Amino_Acid_Change',
+            'Allele_Frequency',
+            'Mismatches',
+            'peptide_position',
+            'Chr',
+            'Genomic_Position',
+            'Protein_position',
+            'Mutation_Consequence',
+            'Gene_Symbol',
+            'Cancer_Driver_Gene',
+            'Proteome_Peptide_Match',
+            'Expression_Level',
+            'Mutant_affinity_score',
+            'Normal_affinity_score',
+            'Expression_score',
+            'priority_Score'), )
 
     # Extract data 
     for mutant_petide in peptide_info :
         for normal_peptide in peptide_info[mutant_petide]:
             for hla in unique_alleles.split(','):
-                # Checking concordance between MHC file and intermediate peptide_info file 
-                assert hla in net_mhc
-                assert mutant_petide in net_mhc[hla]
-                assert normal_peptide in net_mhc[hla]
+                # Checking concordance between MHC files  and intermediate peptide_info file 
+                assert hla in net_mhc_EL
+                assert mutant_petide in net_mhc_EL[hla]
+                assert normal_peptide in net_mhc_EL[hla]
                 # save information tuples 
                 mutation_info = peptide_info[mutant_petide][normal_peptide][0]
                 peptide_sequence_info = peptide_info[mutant_petide][normal_peptide][1]
-                mutant_netmhc_info = net_mhc[hla][mutant_petide]
-                normal_netmhc_info = net_mhc[hla][normal_peptide]
+                mutant_netmhc_info = net_mhc_EL[hla][mutant_petide]
+                normal_netmhc_info = net_mhc_EL[hla][normal_peptide]
                 pep_match_info = peptide_info[mutant_petide][normal_peptide][3]
                 peptide_position = peptide_info[mutant_petide][normal_peptide][2]
                 mutation_id = '{}_{}_{}'.format(mutation_info.chr, mutation_info.pos, mutation_info.alt_allele)
@@ -1183,32 +1236,71 @@ def write_output_file(peptide_info, expression, net_mhc, unique_alleles, cancer_
 
 
                 # Add row to data frame 
-                df.loc[row] = [
-                hla, 
-                print_normal_peptide, 
-                # normal_netmhc_info.affinity, 
-                normal_netmhc_info.rank, 
-                mutant_petide, 
-                # mutant_netmhc_info.affinity, 
-                mutant_netmhc_info.rank, 
-                mutation_info.gene_id, 
-                ','.join(transcript_ids), 
-                '{}/{}'.format(mutation_info.aa_normal, mutation_info.aa_mut), 
-                '-' if allele_fractions == None else allele_frequency, 
-                mismatches, 
-                peptide_position, 
-                mutation_info.chr, 
-                mutation_info.pos, 
-                ','.join(protein_positions_extracted), 
-                peptide_sequence_info.consequence, 
-                '-' if mutation_info.symbol == None else mutation_info.symbol, 
-                cancer_gene,
-                'Yes' if mutant_petide in reference_peptides else 'No', 
-                '-' if expression == None or expression_sum == None else expression_sum, 
-                scores.affinity_mutant_score, 
-                scores.affinity_normal_score, 
-                scores.expression_score, 
-                priority_score]
+                if net_mhc_BA == None:
+                    df.loc[row] = [
+                    hla, 
+                    print_normal_peptide, 
+                    normal_netmhc_info.rank, 
+                    mutant_petide, 
+                    mutant_netmhc_info.rank, 
+                    mutation_info.gene_id, 
+                    ','.join(transcript_ids), 
+                    '{}/{}'.format(mutation_info.aa_normal, mutation_info.aa_mut), 
+                    '-' if allele_fractions == None else allele_frequency, 
+                    mismatches, 
+                    peptide_position, 
+                    mutation_info.chr, 
+                    mutation_info.pos, 
+                    ','.join(protein_positions_extracted), 
+                    peptide_sequence_info.consequence, 
+                    '-' if mutation_info.symbol == None else mutation_info.symbol, 
+                    cancer_gene,
+                    'Yes' if mutant_petide in reference_peptides else 'No', 
+                    '-' if expression == None or expression_sum == None else expression_sum, 
+                    scores.affinity_mutant_score, 
+                    scores.affinity_normal_score, 
+                    scores.expression_score, 
+                    priority_score]
+                else:
+                    # Checking concordance between MHC files  and intermediate peptide_info file 
+                    assert hla in net_mhc_BA
+                    assert mutant_petide in net_mhc_BA[hla]
+                    assert normal_peptide in net_mhc_BA[hla]
+                    mutant_netmhc_BA_info = net_mhc_BA[hla][mutant_petide]
+                    normal_netmhc_BA_info = net_mhc_BA[hla][normal_peptide]
+
+                    df.loc[row] = [
+                    hla, 
+                    print_normal_peptide, 
+                    normal_netmhc_info.rank,
+                    normal_netmhc_info.score,
+                    normal_netmhc_BA_info.affinity,
+                    normal_netmhc_BA_info.rank,
+                    normal_netmhc_BA_info.score,
+                    mutant_petide, 
+                    mutant_netmhc_info.rank,
+                    mutant_netmhc_info.score,
+                    mutant_netmhc_BA_info.affinity,
+                    mutant_netmhc_BA_info.rank,
+                    mutant_netmhc_BA_info.score,
+                    mutation_info.gene_id, 
+                    ','.join(transcript_ids), 
+                    '{}/{}'.format(mutation_info.aa_normal, mutation_info.aa_mut), 
+                    '-' if allele_fractions == None else allele_frequency, 
+                    mismatches, 
+                    peptide_position, 
+                    mutation_info.chr, 
+                    mutation_info.pos, 
+                    ','.join(protein_positions_extracted), 
+                    peptide_sequence_info.consequence, 
+                    '-' if mutation_info.symbol == None else mutation_info.symbol, 
+                    cancer_gene,
+                    'Yes' if mutant_petide in reference_peptides else 'No', 
+                    '-' if expression == None or expression_sum == None else expression_sum, 
+                    scores.affinity_mutant_score, 
+                    scores.affinity_normal_score, 
+                    scores.expression_score, 
+                    priority_score]
 
                 row += 1
 
@@ -1394,7 +1486,7 @@ def write_log_file(argv, peptide_length, sequence_count, reference_peptide_count
           Detecting HLA alleles:                     Detected the following {num_of_HLAalleles} HLA alleles:
                                                         {HLAalleles}
                                                         of which {num_of_unique_alleles} were unique
-          Running NetMHCpan 3.0:                     Analyzed {num_of_unique_alleles} HLA allele(s)
+          Running NetMHCpan 4.0:                     Analyzed {num_of_unique_alleles} HLA allele(s)
                                                      NetMHCpan runtime: {netMHCpan_runtime}
 
           MuPeI Runtime:                             {time_mupei}
@@ -1546,6 +1638,10 @@ def usage():
         -g, --liftover          Perform liftover HG19 to GRCh38.
                                 Requires local picard installation with paths
                                 stated in the config file
+        -n, --netmhc-full-anal  Run NetMHCpan 4.0 with the full analysis including 
+                                both eluted ligand (EL) and binding affinity (BA) 
+                                prediction output (priority score calculated from 
+                                EL rank score)
         -h, --help              Print this help information
 
         REMEMBER to state references in the config.ini file
@@ -1558,8 +1654,8 @@ def usage():
 def read_options(argv):
     try:
         optlist, args = getopt.getopt(argv,
-            'v:a:l:o:d:L:e:c:p:E:m:A:F:s:ftMwgh', 
-            ['input-file=', 'alleles=', 'length=', 'output-file=', 'out-dir=', 'log-file=', 'expression-file=', 'config-file=', 'prefix=', 'expression-type=', 'mismatch-number=','assembly=', 'fork=','species=', 'make-fasta', 'keep-temp', 'mismatch-print', 'webserver', 'liftover','help'])
+            'v:a:l:o:d:L:e:c:p:E:m:A:F:s:nftMwgh', 
+            ['input-file=', 'alleles=', 'length=', 'output-file=', 'out-dir=', 'log-file=', 'expression-file=', 'config-file=', 'prefix=', 'expression-type=', 'mismatch-number=','assembly=', 'fork=','species=', 'netmhc-full-anal', 'make-fasta', 'keep-temp', 'mismatch-print', 'webserver', 'liftover','help'])
         if not optlist:
             print 'No options supplied'
             usage()
@@ -1587,7 +1683,8 @@ def read_options(argv):
         '-E': '--expression-type',
         '-A': '--assembly',
         '-F': '--fork',
-        '-s': '--species'
+        '-s': '--species',
+        '-n': '--netmhc-full-anal'
     }
 
     # Create a dictionary of options and input from the options list
@@ -1628,10 +1725,11 @@ def read_options(argv):
     if int(fork) <= 1:
         usage(); sys.exit('VEP fork number must be greater than 1')
     species = opts['-s'] if '-s' in opts.keys() else 'human'
+    netmhc_anal = 'yes' if '-n' in opts.keys() else None
 
     # Create and fill input named-tuple
-    Input = namedtuple('input', ['vcf_file', 'peptide_length', 'output', 'logfile', 'HLA_alleles', 'config', 'expression_file', 'fasta_file_name', 'webserver', 'outdir', 'keep_temp', 'prefix', 'print_mismatch', 'liftover', 'expression_type', 'num_mismatches', 'assembly', 'fork', 'species'])
-    inputinfo = Input(vcf_file, peptide_length, output, logfile, HLA_alleles, config, expression_file, fasta_file_name, webserver, outdir, keep_temp, prefix, print_mismatch, liftover, expression_type, num_mismatches, assembly, fork, species)
+    Input = namedtuple('input', ['vcf_file', 'peptide_length', 'output', 'logfile', 'HLA_alleles', 'config', 'expression_file', 'fasta_file_name', 'webserver', 'outdir', 'keep_temp', 'prefix', 'print_mismatch', 'liftover', 'expression_type', 'num_mismatches', 'assembly', 'fork', 'species','netmhc_anal'])
+    inputinfo = Input(vcf_file, peptide_length, output, logfile, HLA_alleles, config, expression_file, fasta_file_name, webserver, outdir, keep_temp, prefix, print_mismatch, liftover, expression_type, num_mismatches, assembly, fork, species, netmhc_anal)
 
     return inputinfo
 
