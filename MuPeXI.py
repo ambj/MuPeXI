@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+ #!/usr/bin/env python
 
 """
 MuPeXI - Mutant peptide extractor and Informer
@@ -206,7 +206,7 @@ def check_vcf_file(vcf_file, liftover, species, webserver):
 def check_netMHC_path(netMHC_path):
     if not 'netMHCpan' in netMHC_path:
         usage(); sys.exit('ERROR: netMHCpan not stated in path {} \n'.format(netMHC_path))
-    if not any(x in netMHC_path for x in ['3.0','4.0']):
+    if not any(x in netMHC_path for x in ['netMHCpan-3.0','netMHCpan-4.0']):
         usage(); sys.exit('ERROR:\tnetMHCpan version 3.0 or 4.0 not stated in path {}\n\tOnly these versions are supported'.format(netMHC_path))
 
 
@@ -1064,7 +1064,7 @@ def write_peptide_file(peptide_info, tmp_dir, webserver, keep_tmp, file_prefix, 
 
 
 
-def run_netMHCpan(HLA_alleles, netMHCpan3_0, peptide_file, tmp_dir, webserver, keep_tmp, file_prefix, outdir):
+def run_netMHCpan(HLA_alleles, netMHCpan_path, peptide_file, tmp_dir, webserver, keep_tmp, file_prefix, outdir):
     # isolate unique HLAalleles 
     unique_alleles_set = set(HLA_alleles.split(','))
     unique_alleles = ','.join(map(str, unique_alleles_set))
@@ -1072,7 +1072,7 @@ def run_netMHCpan(HLA_alleles, netMHCpan3_0, peptide_file, tmp_dir, webserver, k
     print_ifnot_webserver('\tRunning NetMHCpan', webserver)
     netMHCpan_start = datetime.now()
     netMHC_file = NamedTemporaryFile(delete = False, dir = tmp_dir)
-    process_netMHC = subprocess.Popen([netMHCpan3_0, '-p', '-a', unique_alleles, '-f', peptide_file.name], stdout = netMHC_file)
+    process_netMHC = subprocess.Popen([netMHCpan_path, '-p', '-a', unique_alleles, '-f', peptide_file.name], stdout = netMHC_file)
     process_netMHC.communicate() # now wait
     netMHC_file.close()
 
