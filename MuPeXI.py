@@ -709,9 +709,10 @@ def peptide_extraction(peptide_lengths, vep_info, proteome_reference, genome_ref
                     fasta_printout = long_peptide_fasta_creation(peptide_sequence_info, mutation_info, fasta_printout)
 
                 normpeps, mutpeps = chopchop(peptide_sequence_info.chop_normal_sequence, p_length), chopchop(peptide_sequence_info.mutation_sequence, p_length)
-                mutated_peptides_missing_normal = normal_peptide_identification(mutated_peptides_missing_normal, mutpeps, reference_peptides, mutation_info)
                 peptide_mutation_position = peptide_mutation_position_annotation(mutpeps, peptide_sequence_info.mutation_position, p_length)
                 peptide_info, intermediate_peptide_counters = peptide_selection(normpeps, mutpeps, peptide_mutation_position, intermediate_peptide_counters, peptide_sequence_info, peptide_info, mutation_info, p_length, reference_peptides)
+                mutated_peptides_missing_normal = normal_peptide_identification(peptide_info, mutated_peptides_missing_normal, mutpeps, mutation_info)
+
 
             # Accumulate counters 
             peptide_count += intermediate_peptide_counters['mutation_peptide_count']
@@ -853,13 +854,6 @@ def long_peptide_fasta_creation (peptide_sequence_info, mutation_info, fasta_pri
     return fasta_printout
 
 
-# peptide_extraction
-def normal_peptide_identification(mutated_peptides_missing_normal, mutpeps, reference_peptides, mutation_info):
-    if not mutation_info.mutation_consequence == 'missense_variant':
-        for mutpep in mutpeps:
-            mutated_peptides_missing_normal.add(mutpep)
-    return mutated_peptides_missing_normal
-
 
 # peptide_extraction
 def peptide_mutation_position_annotation(mutpeps, long_peptide_position, peptide_length):
@@ -906,6 +900,16 @@ def peptide_selection (normpeps, mutpeps, peptide_mutation_position, intermediat
 
 
 # peptide_extraction
+def normal_peptide_identification(peptide_info, mutated_peptides_missing_normal, mutpeps, mutation_info):
+    if not mutation_info.mutation_consequence == 'missense_variant':
+        for mutpep in mutpeps:
+            if mutpep in peptide_info: # check that mutated peptide is in the final dictionary of wanted peptides 
+                mutated_peptides_missing_normal.add(mutpep)
+    return mutated_peptides_missing_normal
+
+
+
+# peptide_extraction
 def normal_peptide_correction(mutated_peptides_missing_normal, mutation_info, peptide_length, reference_peptide_file_names, peptide_info, peptide_match, tmp_dir, pepmatch_file_names, webserver, print_mismatch, num_mismatches):
     # write input file
     mutpeps_file = NamedTemporaryFile(delete = False, dir = tmp_dir)
@@ -918,9 +922,6 @@ def normal_peptide_correction(mutated_peptides_missing_normal, mutation_info, pe
 
     # insert normal in peptide info
     for mutated_peptide in pep_match:
-        #print('{}\t{}'.format(mutated_peptide, peptide_info[mutated_peptide]))
-        #RMHFFF**E
-        #PRMHFFF**
         assert mutated_peptide in peptide_info
         for normal_peptide in peptide_info[mutated_peptide].keys():
             # renaming normal key, thereby inserting the normal peptide 
