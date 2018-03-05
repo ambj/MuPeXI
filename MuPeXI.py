@@ -2,10 +2,8 @@
 
 """
 MuPeXI - Mutant peptide extractor and Informer
-
 Date: 2015-09-03
 By: Anne-Mette Bjerregaard
-
 MuPeXI.py extracts user defined peptides lengths around missense variant mutations, indels and frameshifts.
 Information from each mutation is annotated together with the mutant and normal peptides in the file output. 
 """
@@ -111,9 +109,7 @@ def main(args):
 
 
 """
-
 CHECK FILE PATHS
-
 """
 
 
@@ -249,9 +245,7 @@ def webserver_err_redirection(webserver):
 
 
 """
-
 READ IN DATA
-
 """
 
 def build_proteome_reference(proteome_ref_file, webserver, species):
@@ -336,6 +330,16 @@ def define_species(species):
         gene_id_prefix = 'ENSMUSG'
         assembly = 'GRCm38'
         species = 'mus_musculus'
+    elif species == 'mouse_balbc' :
+        trans_id_prefix = 'MGP_BALBcJ_T'
+        gene_id_prefix = 'MGP_BALBcJ_G'
+        assembly = 'BALB_cJ_v1'
+        species = 'mus_musculus_balbcj'
+    elif species == 'mouse_black6' :
+        trans_id_prefix = 'MGP_C57BL6NJ_T'
+        gene_id_prefix = 'MGP_C57BL6NJ_G'
+        assembly = 'C57BL_6NJ_v1'
+        species = 'mus_musculus_c57bl6nj'
     else :
         usage(); sys.exit('ERROR:\tSpecies {} not recognized \n'.format(species))
 
@@ -392,9 +396,7 @@ def extract_peptide_length(peptide_length):
 
 
 """
-
 VEP
-
 """
 
 
@@ -573,7 +575,7 @@ def build_vep_info(vep_file, webserver):
             transID = line[4].strip()
             prot_pos = line[9].strip()
             cdna_pos = line[7].strip()
-            symbol = re.search(r'SYMBOL=(\d*\w*\d*\w*\d*\w*)', line[13]).group(1).strip()
+            symbol = re.search(r'SYMBOL=(\d*\w*\d*\w*\d*\w*)', line[13]).group(1).strip() if not re.search(r'SYMBOL', line[13]) == None else '-'
             aa_normal, aa_mutation = line[10].split('/')
             codon_normal, codon_mut = line[11].split('/')
             if '-' in line[9] :
@@ -620,11 +622,8 @@ def build_vep_info(vep_file, webserver):
 
 
 """
-
 MuPeX
-
 """
-
 
 
 def reference_peptide_extraction(proteome_reference, peptide_length, tmp_dir, webserver, keep_tmp, file_prefix, outdir, config_file):
@@ -730,50 +729,7 @@ def peptide_extraction(peptide_lengths, vep_info, proteome_reference, genome_ref
     return peptide_info, peptide_counters, fasta_printout, pepmatch_file_names
 
 
-
-
-def peptide_mutation_position_annotation(mutpeps, long_peptide_position, peptide_length):
-    peptide_mutation_positions = []
-    for i in range(len(mutpeps)):
-        if type(long_peptide_position) is int:
-            pep_mut_pos = long_peptide_position - i
-        else:
-            start = int(long_peptide_position.split(':')[0])
-            end = int(long_peptide_position.split(':')[1])
-            final_end = (end - i) if (end - i) < peptide_length else peptide_length
-            final_start = (start - i) if (start - i) > 0 else 1
-            pep_mut_pos = '{}:{}'.format(int(final_start),int(final_end))
-        peptide_mutation_positions.append(pep_mut_pos)
-    return peptide_mutation_positions
-
-
-
-def peptide_selection (normpeps, mutpeps, peptide_mutation_position, intermediate_peptide_counters, peptide_sequence_info, peptide_info, mutation_info, p_length, reference_peptides):
-    for normpep, mutpep, mutpos in izip(normpeps, mutpeps, peptide_mutation_position):
-        if '*' in normpep or '*' in mutpep : # removing peptides from pseudogenes including a *
-            intermediate_peptide_counters['peptide_removal_count'] += 1
-            continue
-        if 'X' in normpep or 'X' in mutpep:
-            intermediate_peptide_counters['peptide_removal_count'] += 1
-            continue
-        if 'U' in normpep or 'U' in mutpep: # removing peptides with U - non normal AA 
-            intermediate_peptide_counters['peptide_removal_count'] += 1
-            continue
-        if len(peptide_sequence_info.mutation_sequence) < p_length:
-            continue
-        if mutpep in reference_peptides: # Counting peptides matching a 100 % normal - Not removing 
-            intermediate_peptide_counters['mutation_normal_match_count'] += 1
-        intermediate_peptide_counters['mutation_peptide_count'] += 1
-
-        pep_match_info = None # empty variable
-
-        # fill dictionary 
-        peptide_info[mutpep][normpep] = [mutation_info, peptide_sequence_info, mutpos, pep_match_info]
-
-    return peptide_info, intermediate_peptide_counters
-
-
-
+# peptide_extraction 
 def mutation_sequence_creation(mutation_info, proteome_reference, genome_reference, peptide_length):
     # Create empty named tuple
     PeptideSequenceInfo = namedtuple('peptide_sequence_info', ['chop_normal_sequence', 'mutation_sequence', 'normal_sequence','mutation_position', 'consequence'])
@@ -788,95 +744,11 @@ def mutation_sequence_creation(mutation_info, proteome_reference, genome_referen
         peptide_sequence_info = frame_shift_peptide(genome_reference, proteome_reference, mutation_info, peptide_length, PeptideSequenceInfo)
     else :
         peptide_sequence_info = None
+
     return peptide_sequence_info
 
 
-
-def long_peptide_fasta_creation (peptide_sequence_info, mutation_info, fasta_printout):
-    header = '>DTU|{trans_id}_{pos}|{cons}_{mut_change}'.format(cons = peptide_sequence_info.consequence,
-        pos = mutation_info.pos,
-        mut_change = mutation_info.aa_normal + str(peptide_sequence_info.mutation_position) + mutation_info.aa_mut, 
-        trans_id = mutation_info.trans_id)
-    seq = peptide_sequence_info.mutation_sequence
-    fasta_printout[header] = seq
-
-    return fasta_printout
-
-
-
-def normal_peptide_identification(mutated_peptides_missing_normal, mutpeps, reference_peptides, mutation_info):
-    if not mutation_info.mutation_consequence == 'missense_variant':
-        for mutpep in mutpeps:
-            mutated_peptides_missing_normal.add(mutpep)
-    return mutated_peptides_missing_normal
-
-
-
-def normal_peptide_correction(mutated_peptides_missing_normal, mutation_info, peptide_length, reference_peptide_file_names, peptide_info, peptide_match, tmp_dir, pepmatch_file_names, webserver, print_mismatch, num_mismatches):
-    # write input file
-    mutpeps_file = NamedTemporaryFile(delete = False, dir = tmp_dir)
-    mutpeps_file.write('{}\n'.format('\n'.join(mutated_peptides_missing_normal)))
-    mutpeps_file.close()
-
-    pepmatch_file = run_peptide_match(mutpeps_file, peptide_length, peptide_match, reference_peptide_file_names, mutation_info, tmp_dir, webserver, print_mismatch, num_mismatches)
-    pep_match = build_pepmatch(pepmatch_file, peptide_length, print_mismatch)
-    pepmatch_file_names[peptide_length] = pepmatch_file 
-
-    # insert normal in peptide info
-    for mutated_peptide in pep_match:
-        assert mutated_peptide in peptide_info
-        for normal_peptide in peptide_info[mutated_peptide].keys():
-            # renaming normal key, thereby inserting the normal peptide 
-            peptide_info[mutated_peptide][pep_match[mutated_peptide].normal_peptide] = peptide_info[mutated_peptide].pop(normal_peptide)
-            peptide_info[mutated_peptide][pep_match[mutated_peptide].normal_peptide][3] = pep_match[mutated_peptide] 
-
-    return peptide_info, pepmatch_file_names
-
-
-def run_peptide_match(mutpeps_file, peptide_length, peptide_match, reference_peptide_file_names, mutation_info, tmp_dir, webserver, print_mismatch, num_mismatches):
-    reference_peptide_file = reference_peptide_file_names[peptide_length]
-    print_ifnot_webserver('\t\tRunning {} aa normal peptide match'.format(peptide_length), webserver)
-    reference_peptide_file_name = reference_peptide_file.name if not type(reference_peptide_file) == str else reference_peptide_file
-    pepmatch_file = NamedTemporaryFile(delete = False, dir = tmp_dir)
-    if not print_mismatch == None:
-        process_pepmatch = subprocess.Popen([peptide_match, '-mm', '-thr' , str(num_mismatches), mutpeps_file.name, reference_peptide_file_name], stdout = pepmatch_file)
-    else:
-        process_pepmatch = subprocess.Popen([peptide_match, '-thr' , str(num_mismatches), mutpeps_file.name, reference_peptide_file_name], stdout = pepmatch_file)
-    process_pepmatch.communicate() # now wait
-    pepmatch_file.close()
-    return pepmatch_file
-
-
-
-def build_pepmatch(pepmatch_file, peptide_length, print_mismatch):
-    pep_match = defaultdict(dict) # empty dictionary
-
-    with open(pepmatch_file.name) as f:
-        for line in f.readlines():
-            if re.search(r'^Hit\s', line):
-                line = [x.strip() for x in line.split()]
-                # save information
-                mutated_peptide = line[2]
-                normal_peptide = line[3]
-                mismatch_peptide = line[4] if not print_mismatch == None else '-' * len(normal_peptide)
-                mismatch = line[5] if print_mismatch == None else line[6]
-            elif re.search(r'^No Hit found\s', line):
-                line = [x.strip() for x in line.split()]
-                mutated_peptide = line[3]
-                normal_peptide = '-' * len(mutated_peptide)
-                mismatch_peptide = '-' * len(mutated_peptide)
-                mismatch = 5
-            else:
-                continue
-            # create named tuple 
-            PepMatchInfo = namedtuple('pep_match_info', ['normal_peptide', 'mismatch', 'mismatch_peptide'])
-            pep_match_info = PepMatchInfo(normal_peptide, int(mismatch), mismatch_peptide)
-            # fill dictionary
-            pep_match[mutated_peptide] = pep_match_info
-    return pep_match
-
-
-
+# peptide_extraction > mutation_sequence_creation
 def missense_variant_peptide(proteome_reference, mutation_info, peptide_length, PeptideSequenceInfo):
     asserted_proteome = reference_assertion(proteome_reference, mutation_info, reference_type = 'proteome')
     aaseq = asserted_proteome[0]
@@ -889,7 +761,7 @@ def missense_variant_peptide(proteome_reference, mutation_info, peptide_length, 
     return PeptideSequenceInfo(normal_sequence, mutation_sequence, normal_sequence, index.mutation_peptide_position, consequence)
 
 
-
+# peptide_extraction > mutation_sequence_creation
 def insertion_peptide(proteome_reference, mutation_info, peptide_length, PeptideSequenceInfo):
     asserted_proteome = reference_assertion(proteome_reference, mutation_info, reference_type = 'proteome')
     aaseq = asserted_proteome[0]
@@ -909,7 +781,7 @@ def insertion_peptide(proteome_reference, mutation_info, peptide_length, Peptide
     return PeptideSequenceInfo(chop_normal_sequence, mutation_sequence, normal_sequence, insertion_range, consequence)
 
 
-
+# peptide_extraction > mutation_sequence_creation
 def deletion_peptide(proteome_reference, mutation_info, peptide_length, PeptideSequenceInfo):
     asserted_proteome = reference_assertion(proteome_reference, mutation_info, reference_type = 'proteome')
     aaseq = asserted_proteome[0]
@@ -929,6 +801,7 @@ def deletion_peptide(proteome_reference, mutation_info, peptide_length, PeptideS
 
 
 
+# peptide_extraction > mutation_sequence_creation
 def frame_shift_peptide(genome_reference, proteome_reference, mutation_info, peptide_length, PeptideSequenceInfo):
     asserted_genome = reference_assertion(genome_reference, mutation_info, reference_type = 'genome')
     asserted_proteome = reference_assertion(proteome_reference, mutation_info, reference_type = 'proteome')
@@ -968,16 +841,143 @@ def frame_shift_peptide(genome_reference, proteome_reference, mutation_info, pep
 
 
 
-def find_codon_position(codon, frame_type):
-    for i in range(len(codon)):
-        if codon[i].isupper():
-            break
-    if frame_type == 'frameshift_insertion':
-        i -= 1
-    return i
+# peptide_extraction
+def long_peptide_fasta_creation (peptide_sequence_info, mutation_info, fasta_printout):
+    header = '>DTU|{trans_id}_{pos}|{cons}_{mut_change}'.format(cons = peptide_sequence_info.consequence,
+        pos = mutation_info.pos,
+        mut_change = mutation_info.aa_normal + str(peptide_sequence_info.mutation_position) + mutation_info.aa_mut, 
+        trans_id = mutation_info.trans_id)
+    seq = peptide_sequence_info.mutation_sequence
+    fasta_printout[header] = seq
+
+    return fasta_printout
+
+
+# peptide_extraction
+def normal_peptide_identification(mutated_peptides_missing_normal, mutpeps, reference_peptides, mutation_info):
+    if not mutation_info.mutation_consequence == 'missense_variant':
+        for mutpep in mutpeps:
+            mutated_peptides_missing_normal.add(mutpep)
+    return mutated_peptides_missing_normal
+
+
+# peptide_extraction
+def peptide_mutation_position_annotation(mutpeps, long_peptide_position, peptide_length):
+    peptide_mutation_positions = []
+    for i in range(len(mutpeps)):
+        if type(long_peptide_position) is int:
+            pep_mut_pos = long_peptide_position - i
+        else:
+            start = int(long_peptide_position.split(':')[0])
+            end = int(long_peptide_position.split(':')[1])
+            final_end = (end - i) if (end - i) < peptide_length else peptide_length
+            final_start = (start - i) if (start - i) > 0 else 1
+            pep_mut_pos = '{}:{}'.format(int(final_start),int(final_end))
+        peptide_mutation_positions.append(pep_mut_pos)
+    return peptide_mutation_positions
 
 
 
+# peptide_extraction
+def peptide_selection (normpeps, mutpeps, peptide_mutation_position, intermediate_peptide_counters, peptide_sequence_info, peptide_info, mutation_info, p_length, reference_peptides):
+    for normpep, mutpep, mutpos in izip(normpeps, mutpeps, peptide_mutation_position):
+        if '*' in normpep or '*' in mutpep : # removing peptides from pseudogenes including a *
+            intermediate_peptide_counters['peptide_removal_count'] += 1
+            continue
+        if 'X' in normpep or 'X' in mutpep:
+            intermediate_peptide_counters['peptide_removal_count'] += 1
+            continue
+        if 'U' in normpep or 'U' in mutpep: # removing peptides with U - non normal AA 
+            intermediate_peptide_counters['peptide_removal_count'] += 1
+            continue
+        if len(peptide_sequence_info.mutation_sequence) < p_length:
+            continue
+        if mutpep in reference_peptides: # Counting peptides matching a 100 % normal - Not removing 
+            intermediate_peptide_counters['mutation_normal_match_count'] += 1
+        intermediate_peptide_counters['mutation_peptide_count'] += 1
+
+        pep_match_info = None # empty variable
+
+        # fill dictionary 
+        peptide_info[mutpep][normpep] = [mutation_info, peptide_sequence_info, mutpos, pep_match_info]
+
+    return peptide_info, intermediate_peptide_counters
+
+
+
+# peptide_extraction
+def normal_peptide_correction(mutated_peptides_missing_normal, mutation_info, peptide_length, reference_peptide_file_names, peptide_info, peptide_match, tmp_dir, pepmatch_file_names, webserver, print_mismatch, num_mismatches):
+    # write input file
+    mutpeps_file = NamedTemporaryFile(delete = False, dir = tmp_dir)
+    mutpeps_file.write('{}\n'.format('\n'.join(mutated_peptides_missing_normal)))
+    mutpeps_file.close()
+
+    pepmatch_file = run_peptide_match(mutpeps_file, peptide_length, peptide_match, reference_peptide_file_names, mutation_info, tmp_dir, webserver, print_mismatch, num_mismatches)
+    pep_match = build_pepmatch(pepmatch_file, peptide_length, print_mismatch)
+    pepmatch_file_names[peptide_length] = pepmatch_file 
+
+    # insert normal in peptide info
+    for mutated_peptide in pep_match:
+        #print('{}\t{}'.format(mutated_peptide, peptide_info[mutated_peptide]))
+        #RMHFFF**E
+        #PRMHFFF**
+        assert mutated_peptide in peptide_info
+        for normal_peptide in peptide_info[mutated_peptide].keys():
+            # renaming normal key, thereby inserting the normal peptide 
+            peptide_info[mutated_peptide][pep_match[mutated_peptide].normal_peptide] = peptide_info[mutated_peptide].pop(normal_peptide)
+            peptide_info[mutated_peptide][pep_match[mutated_peptide].normal_peptide][3] = pep_match[mutated_peptide] 
+
+    return peptide_info, pepmatch_file_names
+
+
+
+# peptide_extraction > normal_peptide_correction
+def run_peptide_match(mutpeps_file, peptide_length, peptide_match, reference_peptide_file_names, mutation_info, tmp_dir, webserver, print_mismatch, num_mismatches):
+    reference_peptide_file = reference_peptide_file_names[peptide_length]
+    print_ifnot_webserver('\t\tRunning {} aa normal peptide match'.format(peptide_length), webserver)
+    reference_peptide_file_name = reference_peptide_file.name if not type(reference_peptide_file) == str else reference_peptide_file
+    pepmatch_file = NamedTemporaryFile(delete = False, dir = tmp_dir)
+    if not print_mismatch == None:
+        process_pepmatch = subprocess.Popen([peptide_match, '-mm', '-thr' , str(num_mismatches), mutpeps_file.name, reference_peptide_file_name], stdout = pepmatch_file)
+    else:
+        process_pepmatch = subprocess.Popen([peptide_match, '-thr' , str(num_mismatches), mutpeps_file.name, reference_peptide_file_name], stdout = pepmatch_file)
+    process_pepmatch.communicate() # now wait
+    pepmatch_file.close()
+    return pepmatch_file
+
+
+
+# peptide_extraction > normal_peptide_correction
+def build_pepmatch(pepmatch_file, peptide_length, print_mismatch):
+    pep_match = defaultdict(dict) # empty dictionary
+
+    with open(pepmatch_file.name) as f:
+        for line in f.readlines():
+            if re.search(r'^Hit\s', line):
+                line = [x.strip() for x in line.split()]
+                # save information
+                mutated_peptide = line[2]
+                normal_peptide = line[3]
+                mismatch_peptide = line[4] if not print_mismatch == None else '-' * len(normal_peptide)
+                mismatch = line[5] if print_mismatch == None else line[6]
+            elif re.search(r'^No Hit found\s', line):
+                line = [x.strip() for x in line.split()]
+                mutated_peptide = line[3]
+                normal_peptide = '-' * len(mutated_peptide)
+                mismatch_peptide = '-' * len(mutated_peptide)
+                mismatch = 5
+            else:
+                continue
+            # create named tuple 
+            PepMatchInfo = namedtuple('pep_match_info', ['normal_peptide', 'mismatch', 'mismatch_peptide'])
+            pep_match_info = PepMatchInfo(normal_peptide, int(mismatch), mismatch_peptide)
+            # fill dictionary
+            pep_match[mutated_peptide] = pep_match_info
+    return pep_match
+
+
+
+# missense_variant_peptide / insertion_peptide / deletion_peptide / frame_shift_peptide
 def index_creator(protein_position, peptide_length, aaseq, codon, cdna_pos_start, index_type, frame_type) :
     if index_type == 'amino_acid':
         lower_index = max(protein_position - peptide_length, 0)
@@ -996,6 +996,18 @@ def index_creator(protein_position, peptide_length, aaseq, codon, cdna_pos_start
 
 
 
+# missense_variant_peptide / insertion_peptide / deletion_peptide / frame_shift_peptide > index_creator
+def find_codon_position(codon, frame_type):
+    for i in range(len(codon)):
+        if codon[i].isupper():
+            break
+    if frame_type == 'frameshift_insertion':
+        i -= 1
+    return i
+
+
+
+# missense_variant_peptide / insertion_peptide / deletion_peptide / frame_shift_peptide
 def reference_assertion(reference, mutation_info, reference_type):
     # Check gene id and transcript id exists in proteome_reference dictionary 
     assert mutation_info.gene_id in reference, '{gene_id}: This gene is not in the reference gene set. Check that you have used the right reference corresponding to the one used when running VEP'.format(trans_id = mutation_info.gene_id)
@@ -1019,6 +1031,7 @@ def reference_assertion(reference, mutation_info, reference_type):
 
 
 
+# main
 def write_fasta (tmp_dir, fasta_printout, webserver):
     if not fasta_printout == None:
         print_ifnot_webserver('\tWriting Fasta file', webserver)
@@ -1035,9 +1048,7 @@ def write_fasta (tmp_dir, fasta_printout, webserver):
 
 
 """
-
 MuPeI
-
 """
 
 
@@ -1459,11 +1470,9 @@ def write_log_file(argv, peptide_length, sequence_count, reference_peptide_count
         # DATE:     {day} {date} of {month} {year}
         # TIME:     {print_time}
         # PWD:      {pwd}
-
         ----------------------------------------------------------------------------------------------------------
                                                         MuPeX
         ----------------------------------------------------------------------------------------------------------
-
           Reading protein reference file:            Found {sequence_count} sequences, with {reference_peptide_count} {peptide_length}mers
                                                            of which {unique_reference_peptide_count} were unique peptides
           Reading VEP file:                          Found {non_used_mutation_count} irrelevant mutation consequences which were discarded
@@ -1474,23 +1483,18 @@ def write_log_file(argv, peptide_length, sequence_count, reference_peptide_count
                                                      In {gene_count} genes and {transcript_Count} transcripts
           Checking peptides:                         {normal_match_count} peptides matched a normal peptide. 
                                                      {removal_count} peptides included unsupported symbols (e.g. *, X, U) and were discarded 
-
           Final Result:                              {peptide_count} potential mutant peptides
           MuPeX Runtime:                             {time_mupex}
-
         ----------------------------------------------------------------------------------------------------------
                                                         MuPeI
         ----------------------------------------------------------------------------------------------------------
-
           Reading through MuPex file:                Found {peptide_count} peptides of which {unique_mutant_peptide_count} were unique
           Detecting HLA alleles:                     Detected the following {num_of_HLAalleles} HLA alleles:
                                                         {HLAalleles}
                                                         of which {num_of_unique_alleles} were unique
           Running NetMHCpan 4.0:                     Analyzed {num_of_unique_alleles} HLA allele(s)
                                                      NetMHCpan runtime: {netMHCpan_runtime}
-
           MuPeI Runtime:                             {time_mupei}
-
           TOTAL Runtime:                             {time}
           """
     log_file.write(log.format(version = version,
@@ -1583,22 +1587,17 @@ def webserver_print_output(webserver, www_tmp_dir, output, logfile, fasta_file_n
 def usage():
     usage =   """
         MuPeXI - Mutant Peptide Extractor and Informer
-
         The current version of this program is available from
         https://github.com/ambj/MuPeXI
-
         MuPeXI.py accepts a VCF file describing somatic mutations as input, and from this 
         derives a set of mutated peptides of specified length(s). These mutated peptides 
         are returned in a table along with various annotations that may be useful for 
         predicting the immunogenicity of each peptide.
-
         Usage: {call} -v <VCF-file> [options]
-
                                                                                     DEFAULT
         Required arguments:
         -v, --vcf-file <file>   VCF file of variant calls, preferably from
                                 MuTect (only SNVs) or MuTect2 (SNVs and indels)
-
         Recommended arguments:
         -a, --alleles           HLA alleles, comma separated.                       HLA-A02:01
         -l, --length            Peptide length, given as single number,             9
@@ -1608,7 +1607,6 @@ def usage():
         -E, --expression-type   Are the expression values in the expression         transcript
                                 files determined on transcript or gene level.
                                 (transcript/gene)
-
         Optional arguments affecting output files:
         -o, --output-file       Output file name.                                   <VEP-file>.mupexi
         -d, --out-dir           Output directory - full path.                       current directory
@@ -1619,14 +1617,13 @@ def usage():
         -m, --mismatch-number   Maximum number of mismatches to search for in       4
                                 normal peptide match.
         -A, --assembly          The assembly version to run VEP.                    GRCh38
-        -s, --species           Species to analyze (human / mouse)                  human
+        -s, --species           Species to analyze (human / mouse / mouse_black6 /  human
+                                mouse_balbc)
                                 If mouse is set default assembly is GRCm38.
-                                Remember to download the mus_musculus VEP cache
-                                and state mouse MHC alleles.
-
+                                Remember to download the correct VEP cache
+                                and state species corresponding MHC alleles.
         Optional arguments affecting computational process:
         -F, --fork              Number of processors running VEP.                   2
-
         Other options (these do not take values)
         -f, --make-fasta        Create FASTA file with long peptides 
                                 - mutation in the middle
@@ -1643,9 +1640,7 @@ def usage():
                                 prediction output (priority score calculated from 
                                 EL rank score)
         -h, --help              Print this help information
-
         REMEMBER to state references in the config.ini file
-
         """
     print(usage.format(call = sys.argv[0], path = '/'.join(sys.argv[0].split('/')[0:-1]) ))
 
@@ -1744,7 +1739,6 @@ def read_options(argv):
 
 if __name__ == '__main__':
     main(sys.argv[1:])
-
 
 
 
