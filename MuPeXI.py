@@ -203,9 +203,8 @@ def check_vcf_file(vcf_file, liftover, species, webserver):
 def check_netMHC_path(netMHC_path):
     if not 'netMHCpan' in netMHC_path:
         usage(); sys.exit('ERROR: netMHCpan not stated in path {} \n'.format(netMHC_path))
-    #if not any(x in netMHC_path for x in ['netMHCpan-3.0','netMHCpan-4.0']):
-    if not 'netMHCpan-4.0' in netMHC_path:
-        usage(); sys.exit('ERROR:\tnetMHCpan version 3.0 or 4.0 not stated in path {}\n\tOnly these versions are supported'.format(netMHC_path))
+    if not '4.0' in netMHC_path:
+        usage(); sys.exit('ERROR:\tnetMHCpan version 4.0 not stated in path {}\n\tOnly these versions are supported'.format(netMHC_path))
 
 
 
