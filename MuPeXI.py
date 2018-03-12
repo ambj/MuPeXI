@@ -921,7 +921,7 @@ def normal_peptide_correction(mutated_peptides_missing_normal, mutation_info, pe
 
     # insert normal in peptide info
     for mutated_peptide in pep_match:
-        assert mutated_peptide in peptide_info
+        assert mutated_peptide in peptide_info, 'Mutated peptide "{}" not stated in peptide_info data structure'.format(mutated_peptide)
         for normal_peptide in peptide_info[mutated_peptide].keys():
             # renaming normal key, thereby inserting the normal peptide 
             peptide_info[mutated_peptide][pep_match[mutated_peptide].normal_peptide] = peptide_info[mutated_peptide].pop(normal_peptide)
@@ -1212,9 +1212,9 @@ def write_output_file(peptide_info, expression, net_mhc_BA, net_mhc_EL, unique_a
         for normal_peptide in peptide_info[mutant_petide]:
             for hla in unique_alleles.split(','):
                 # Checking concordance between MHC files  and intermediate peptide_info file 
-                assert hla in net_mhc_EL
-                assert mutant_petide in net_mhc_EL[hla]
-                assert normal_peptide in net_mhc_EL[hla]
+                assert hla in net_mhc_EL, 'Allele "{}" not stated in NetMHCpan output'.format(hla)
+                assert mutant_petide in net_mhc_EL[hla], 'Mutant peptide "{}" not found in NetMHCpan output'.format(mutant_petide)
+                assert normal_peptide in net_mhc_EL[hla], 'Normal peptide "{}" not found in NetMHCpan output'.format(normal_peptide)
                 # save information tuples 
                 mutation_info = peptide_info[mutant_petide][normal_peptide][0]
                 peptide_sequence_info = peptide_info[mutant_petide][normal_peptide][1]
@@ -1274,9 +1274,9 @@ def write_output_file(peptide_info, expression, net_mhc_BA, net_mhc_EL, unique_a
                     priority_score]
                 else:
                     # Checking concordance between MHC files  and intermediate peptide_info file 
-                    assert hla in net_mhc_BA
-                    assert mutant_petide in net_mhc_BA[hla]
-                    assert normal_peptide in net_mhc_BA[hla]
+                    assert hla in net_mhc_BA, 'Allele "{}" not stated in NetMHCpan output'.format(hla)
+                    assert mutant_petide in net_mhc_BA[hla], 'Mutant peptide "{}" not found in NetMHCpan output'.format(mutant_petide)
+                    assert normal_peptide in net_mhc_BA[hla], 'Normal peptide "{}" not found in NetMHCpan output'.format(normal_peptide)
                     mutant_netmhc_BA_info = net_mhc_BA[hla][mutant_petide]
                     normal_netmhc_BA_info = net_mhc_BA[hla][normal_peptide]
 
