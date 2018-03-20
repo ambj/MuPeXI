@@ -45,7 +45,6 @@ def main(args):
     genome_reference = build_genome_reference(paths.genome_ref_file, input_.webserver, species)
     cancer_genes = build_cancer_genes(paths.cosmic_file, input_.webserver)
 
-    print_mem_usage()
 
     """
     VEP: Ensembls Variant effect predictor 
@@ -63,7 +62,6 @@ def main(args):
 
     end_time_vep = datetime.now()
 
-    print_mem_usage()
 
     """
     MuPeX: Mutant peptide extraction
@@ -84,7 +82,6 @@ def main(args):
 
     end_time_mupex = datetime.now()
 
-    print_mem_usage()
 
     """
     MuPeI: Mutant peptide Informer 
@@ -99,13 +96,11 @@ def main(args):
     net_mhc_BA = build_netMHC(netMHC_BA_file, input_.webserver, 'YES') if not netMHC_BA_file == None else None
     net_mhc_EL = build_netMHC(netMHC_EL_file, input_.webserver, 'NO')
 
-    print_mem_usage()
 
     # write files 
     output_file = write_output_file(peptide_info, expression, net_mhc_BA, net_mhc_EL, unique_alleles, cancer_genes, tmp_dir, input_.webserver, input_.print_mismatch, allele_fractions, input_.expression_type, transcript_info, reference_peptides, proteome_reference, protein_positions, version)
     log_file = write_log_file(sys.argv, peptide_length, sequence_count, reference_peptide_counters, vep_counters, peptide_counters, start_time_mupex, start_time_mupei, start_time, end_time_mupex, input_.HLA_alleles, netMHCpan_runtime, unique_mutant_peptide_count, unique_alleles, tmp_dir, input_.webserver, version)
 
-    print_mem_usage()
 
     # clean up
     move_output_files(input_.outdir, log_file, input_.logfile, fasta_file, input_.fasta_file_name, output_file, input_.output, input_.webserver, www_tmp_dir)
