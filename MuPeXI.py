@@ -203,10 +203,13 @@ def check_vcf_file(vcf_file, liftover, species, webserver):
 
 
 def check_netMHC_path(netMHC_path):
-    if not 'netMHCpan' in netMHC_path:
-        usage(); sys.exit('ERROR: netMHCpan not stated in path {} \n'.format(netMHC_path))
-    if not '4.0' in netMHC_path:
-        usage(); sys.exit('ERROR:\tnetMHCpan version 4.0 not stated in path {}\n\tOnly these versions are supported'.format(netMHC_path))
+    if 'netH2pan' in netMHC_path:
+        print '\tMouse specific MHC binding predictor netH2pan used'
+    if 'netMHCpan' in netMHC_path:
+        if not '4.0' in netMHC_path:
+            usage(); sys.exit('ERROR:\tnetMHCpan version 4.0 not stated in path {}\n\tOnly this version is supported'.format(netMHC_path))
+    else:
+        usage(); sys.exit('ERROR:\tnetMHCpan / netH2pan not stated in path {} \n\t\tCheck the correct path to the netXpan binding predictor is annotated in the config.ini'.format(netMHC_path))
 
 
 
