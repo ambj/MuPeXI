@@ -1482,9 +1482,11 @@ def write_log_file(argv, peptide_length, sequence_count, reference_peptide_count
         # DATE:     {day} {date} of {month} {year}
         # TIME:     {print_time}
         # PWD:      {pwd}
+
         ----------------------------------------------------------------------------------------------------------
                                                         MuPeX
         ----------------------------------------------------------------------------------------------------------
+
           Reading protein reference file:            Found {sequence_count} sequences, with {reference_peptide_count} {peptide_length}mers
                                                            of which {unique_reference_peptide_count} were unique peptides
           Reading VEP file:                          Found {non_used_mutation_count} irrelevant mutation consequences which were discarded
@@ -1497,9 +1499,11 @@ def write_log_file(argv, peptide_length, sequence_count, reference_peptide_count
                                                      {removal_count} peptides included unsupported symbols (e.g. *, X, U) and were discarded 
           Final Result:                              {peptide_count} potential mutant peptides
           MuPeX Runtime:                             {time_mupex}
+
         ----------------------------------------------------------------------------------------------------------
                                                         MuPeI
         ----------------------------------------------------------------------------------------------------------
+
           Reading through MuPex file:                Found {peptide_count} peptides of which {unique_mutant_peptide_count} were unique
           Detecting HLA alleles:                     Detected the following {num_of_HLAalleles} HLA alleles:
                                                         {HLAalleles}
@@ -1599,17 +1603,22 @@ def webserver_print_output(webserver, www_tmp_dir, output, logfile, fasta_file_n
 def usage():
     usage =   """
         MuPeXI - Mutant Peptide Extractor and Informer
+
         The current version of this program is available from
         https://github.com/ambj/MuPeXI
+
         MuPeXI.py accepts a VCF file describing somatic mutations as input, and from this 
         derives a set of mutated peptides of specified length(s). These mutated peptides 
         are returned in a table along with various annotations that may be useful for 
         predicting the immunogenicity of each peptide.
+
         Usage: {call} -v <VCF-file> [options]
                                                                                     DEFAULT
+
         Required arguments:
         -v, --vcf-file <file>   VCF file of variant calls, preferably from
                                 MuTect (only SNVs) or MuTect2 (SNVs and indels)
+
         Recommended arguments:
         -a, --alleles           HLA alleles, comma separated.                       HLA-A02:01
         -l, --length            Peptide length, given as single number,             9
@@ -1619,6 +1628,7 @@ def usage():
         -E, --expression-type   Are the expression values in the expression         transcript
                                 files determined on transcript or gene level.
                                 (transcript/gene)
+
         Optional arguments affecting output files:
         -o, --output-file       Output file name.                                   <VEP-file>.mupexi
         -d, --out-dir           Output directory - full path.                       current directory
@@ -1634,6 +1644,7 @@ def usage():
                                 If mouse is set default assembly is GRCm38.
                                 Remember to download the correct VEP cache
                                 and state species corresponding MHC alleles.
+
         Optional arguments affecting computational process:
         -F, --fork              Number of processors running VEP.                   2
         Other options (these do not take values)
@@ -1652,6 +1663,7 @@ def usage():
                                 prediction output (priority score calculated from 
                                 EL rank score)
         -h, --help              Print this help information
+
         REMEMBER to state references in the config.ini file
         """
     print(usage.format(call = sys.argv[0], path = '/'.join(sys.argv[0].split('/')[0:-1]) ))
