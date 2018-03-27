@@ -205,7 +205,7 @@ def check_vcf_file(vcf_file, liftover, species, webserver):
 def check_netMHC_path(netMHC_path):
     if 'netH2pan' in netMHC_path:
         print '\tMouse specific MHC binding predictor netH2pan used'
-    if 'netMHCpan' in netMHC_path:
+    elif 'netMHCpan' in netMHC_path:
         if not '4.0' in netMHC_path:
             usage(); sys.exit('ERROR:\tnetMHCpan version 4.0 not stated in path {}\n\tOnly this version is supported'.format(netMHC_path))
     else:
