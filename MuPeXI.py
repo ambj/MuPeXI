@@ -515,7 +515,6 @@ def extract_allele_frequency(vcf_sorted_file, webserver, variant_caller):
                     genomic_position = genomic_position if not altered_allele == '-' else int(genomic_position) + 1,
                     altered_allele = altered_allele)
                 allele_fractions[ID] = allele_fraction
-
     return allele_fractions
 
 
@@ -592,12 +591,12 @@ def build_vep_info(vep_file, webserver):
                 prot_pos, prot_pos_to = line[9].split('-')
             else :
                 prot_pos, prot_pos_to = line[9].strip(), None
-            mutation_id = '{}_{}_{}'.format(chr_, genome_pos, alt_allele)
+            mutation_id_vep = '{}_{}_{}/{}'.format(chr_, genome_pos, aa_normal, aa_mutation)
             # Generate dict of dicts (dependent on both mutation ID and gene ID)
             # then set the default value of the key to be a list and append the transcript id 
-            transcript_info[mutation_id].setdefault(geneID,[]).append(transID)
+            transcript_info[mutation_id_vep].setdefault(geneID,[]).append(transID)
             # ad protein position
-            protein_positions[mutation_id][geneID][transID] = prot_pos
+            protein_positions[mutation_id_vep][geneID][transID] = prot_pos
             # append information from the line to the list of named tuples - fill tuple 
             vep_info.append(Mutation_Info(geneID, transID, mutation_consequence, chr_, genome_pos, cdna_pos, int(prot_pos), prot_pos_to, aa_normal, aa_mutation, codon_normal, codon_mut, alt_allele, symbol))
 
@@ -706,6 +705,7 @@ def peptide_extraction(peptide_lengths, vep_info, proteome_reference, genome_ref
     fasta_printout = defaultdict(dict) if not fasta_file_name == None else None 
     pepmatch_file_names = defaultdict(dict) # empty dictionary
 
+
     for p_length in peptide_lengths:
         mutated_peptides_missing_normal = set()
         for mutation_info in vep_info:
@@ -713,16 +713,13 @@ def peptide_extraction(peptide_lengths, vep_info, proteome_reference, genome_ref
             intermediate_peptide_counters = {'mutation_peptide_count': 0, 'mutation_normal_match_count': 0, 'peptide_removal_count': 0}
             # extract sequence 
             peptide_sequence_info = mutation_sequence_creation(mutation_info, proteome_reference, genome_reference, p_length)
-
             if not peptide_sequence_info == None :
                 if not fasta_printout == None:
                     fasta_printout = long_peptide_fasta_creation(peptide_sequence_info, mutation_info, fasta_printout)
-
                 normpeps, mutpeps = chopchop(peptide_sequence_info.chop_normal_sequence, p_length), chopchop(peptide_sequence_info.mutation_sequence, p_length)
                 peptide_mutation_position = peptide_mutation_position_annotation(mutpeps, peptide_sequence_info.mutation_position, p_length)
                 peptide_info, intermediate_peptide_counters = peptide_selection(normpeps, mutpeps, peptide_mutation_position, intermediate_peptide_counters, peptide_sequence_info, peptide_info, mutation_info, p_length, reference_peptides)
                 mutated_peptides_missing_normal = normal_peptide_identification(peptide_info, mutated_peptides_missing_normal, mutpeps, mutation_info)
-
 
             # Accumulate counters 
             peptide_count += intermediate_peptide_counters['mutation_peptide_count']
@@ -835,6 +832,8 @@ def frame_shift_peptide(genome_reference, proteome_reference, mutation_info, pep
         else:
             mutation_sequence = seq[n_index.lower_index :cdna_pos_start] + new_codon.lower() + seq[cdna_pos_end - 1: ]
 
+    detect_stop_codon(mutation_sequence, mutation_info)
+
     # BIO PYTHON:
     # ignore biopython warnings (as we intentionally create sequences not multiple by three) 
     with warnings.catch_warnings():
@@ -849,6 +848,25 @@ def frame_shift_peptide(genome_reference, proteome_reference, mutation_info, pep
 
     # Return long peptides and information
     return PeptideSequenceInfo(chop_normal_sequence, mutation_aaseq, normal_sequence, frameshift_range, consequence)
+
+
+
+# peptide_extraction > mutation_sequence_creation > frame_shift_peptide
+def detect_stop_codon (mutation_sequence, mutation_info):
+    # check if the mutation generates a stop-codon
+    pos = 1
+    for nucleotide in mutation_sequence :
+        # find the mutation - annotated with lowercase 
+        if nucleotide.islower() : 
+            for i in [0, 1, 2] :
+                # i identify if codon is within the reading frame 
+                codon_value = float(pos + i - 3) / 3  
+                if codon_value.is_integer() :
+                    codon = mutation_sequence[pos + i - 3 : pos + i]
+                    # see if the codon is a stop codon 
+                    if codon.upper() in ['TAA','TAG','TGA']: 
+                        print '\t\tNOTE:\tFrameshift mutation {}/{} in {} is generating the stop codon {}\n\t\t\tNo peptides generated from this mutation'.format(mutation_info.aa_normal, mutation_info.aa_mut, mutation_info.trans_id, codon)
+        pos = pos + 1
 
 
 
@@ -884,6 +902,10 @@ def peptide_mutation_position_annotation(mutpeps, long_peptide_position, peptide
 
 # peptide_extraction
 def peptide_selection (normpeps, mutpeps, peptide_mutation_position, intermediate_peptide_counters, peptide_sequence_info, peptide_info, mutation_info, p_length, reference_peptides):
+
+    if len(peptide_sequence_info.mutation_sequence) < p_length:
+        print '\t\tNOTE:\tMutation peptide sequence {} length is smaller than defined peptide length {}'.format(peptide_sequence_info.mutation_sequence, p_length)
+
     for normpep, mutpep, mutpos in izip(normpeps, mutpeps, peptide_mutation_position):
         if '*' in normpep or '*' in mutpep : # removing peptides from pseudogenes including a *
             intermediate_peptide_counters['peptide_removal_count'] += 1
@@ -893,8 +915,6 @@ def peptide_selection (normpeps, mutpeps, peptide_mutation_position, intermediat
             continue
         if 'U' in normpep or 'U' in mutpep: # removing peptides with U - non normal AA 
             intermediate_peptide_counters['peptide_removal_count'] += 1
-            continue
-        if len(peptide_sequence_info.mutation_sequence) < p_length:
             continue
         if mutpep in reference_peptides: # Counting peptides matching a 100 % normal - Not removing 
             intermediate_peptide_counters['mutation_normal_match_count'] += 1
@@ -1233,18 +1253,18 @@ def write_output_file(peptide_info, expression, net_mhc_BA, net_mhc_EL, unique_a
                 normal_netmhc_info = net_mhc_EL[hla][normal_peptide]
                 pep_match_info = peptide_info[mutant_petide][normal_peptide][3]
                 peptide_position = peptide_info[mutant_petide][normal_peptide][2]
-                mutation_id = '{}_{}_{}'.format(mutation_info.chr, mutation_info.pos, mutation_info.alt_allele)
+                mutation_id_vep = '{}_{}_{}/{}'.format(mutation_info.chr, mutation_info.pos, mutation_info.aa_normal, mutation_info.aa_mut)
 
                 # Extract mismatches
                 mismatches = pep_match_info.mismatch if not pep_match_info == None else 1
                 # Print normal peptide or normal peptide only showing mis matched (...X...XX...)
                 print_normal_peptide = mismatch_snv_normal_peptide_conversion(normal_peptide, peptide_position, peptide_sequence_info.consequence, pep_match_info) if not print_mismatch == None else normal_peptide
                 # Extract transcript IDs including the peptide
-                transcript_ids = extract_transcript_ids(mutation_info.gene_id, transcript_info[mutation_id][mutation_info.gene_id], proteome_reference, normal_peptide, peptide_sequence_info.consequence)
+                transcript_ids = extract_transcript_ids(mutation_info.gene_id, transcript_info[mutation_id_vep][mutation_info.gene_id], proteome_reference, normal_peptide, peptide_sequence_info.consequence)
                 # Extract protein position
-                protein_positions_extracted = extract_protein_position(transcript_ids, mutation_id, mutation_info.gene_id, protein_positions)
+                protein_positions_extracted = extract_protein_position(transcript_ids, mutation_id_vep, mutation_info.gene_id, protein_positions)
                 # Extract expression value if file is given 
-                expression_sum = extract_expression_value(expression_file_type, expression, mutation_info.gene_id, webserver, transcript_info[mutation_id][mutation_info.gene_id], printed_ids)
+                expression_sum = extract_expression_value(expression_file_type, expression, mutation_info.gene_id, webserver, transcript_info[mutation_id_vep][mutation_info.gene_id], printed_ids)
                 # Extract cancer genes if file is given 
                 if not cancer_genes == None:
                     cancer_gene = 'Yes' if mutation_info.symbol in cancer_genes else 'No'
@@ -1423,10 +1443,10 @@ def extract_transcript_ids(gene_id, trans_ids, proteome_reference, normal_peptid
 
 
 
-def extract_protein_position(transcript_ids, mutation_id, gene_id, protein_positions) :
+def extract_protein_position(transcript_ids, mutation_id_vep, gene_id, protein_positions) :
     protein_positions_extracted = []
     for trans_id in transcript_ids :
-        protein_positions_extracted.append(protein_positions[mutation_id][gene_id][trans_id])
+        protein_positions_extracted.append(protein_positions[mutation_id_vep][gene_id][trans_id])
 
     return protein_positions_extracted
 
