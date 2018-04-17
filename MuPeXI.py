@@ -1140,7 +1140,7 @@ def run_netMHCpan(HLA_alleles, netMHCpan_path, peptide_file, tmp_dir, webserver,
 
 def build_netMHC(netMHC_file, webserver, affinity):
     netmhc_anal = 'binding affinity prediction' if affinity == 'YES' else 'eluted ligand prediction'
-    print('\tCreating NetMHCpan {} file dictionary'.format(netmhc_anal))
+    print_ifnot_webserver('\tCreating NetMHCpan {} file dictionary'.format(netmhc_anal), webserver)
     net_mhc = defaultdict(dict) # empty dictionary
     NetMHCInfo = namedtuple('NetMHCInfo', ['affinity', 'rank', 'score'])
 
