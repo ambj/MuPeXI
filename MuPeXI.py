@@ -26,7 +26,7 @@ def main(args):
 
     # State input in variables
     input_ = read_options(args)
-    version = '1.1.3'
+    version = '1.2.0'
 
     # Redirect std error when run on webserver 
     webserver_err_redirection(input_.webserver)
