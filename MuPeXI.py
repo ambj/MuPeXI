@@ -828,7 +828,7 @@ def frame_shift_peptide(genome_reference, proteome_reference, mutation_info, pep
         n_index = index_creator(mutation_info.prot_pos, peptide_length, aaseq, mutation_info.codon_mut, cdna_pos_start, index_type = 'nucleotide', frame_type = 'frameshift_insertion')
         new_codon = re.search(r'([A-Z]+)', mutation_info.codon_mut).group(1).strip()
         if mutation_info.codon_normal == '-':
-            mutation_sequence = seq[n_index.lower_index - 3:cdna_pos_start + 1] + new_codon.lower() + seq[cdna_pos_end : ]
+            mutation_sequence = seq[n_index.lower_index - 3:cdna_pos_start] + new_codon.lower() + seq[cdna_pos_end - 1: ]
         else:
             mutation_sequence = seq[n_index.lower_index :cdna_pos_start] + new_codon.lower() + seq[cdna_pos_end - 1: ]
 
