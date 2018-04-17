@@ -1613,10 +1613,10 @@ def webserver_print_output(webserver, www_tmp_dir, output, logfile, fasta_file_n
 
        print '\n-------------------------------------------------------------\n'
 
-       print '\nLink to MuPeXI output file <a href="/services/MuPeXI-1.1/tmp/{}/{}">MuPeXI.out</a>\n'.format(dir_name, output)
-       print 'Link to MuPeXI log file <a href="/services/MuPeXI-1.1/tmp/{}/{}">MuPeXI.log</a>\n'.format(dir_name, logfile)
+       print '\nLink to MuPeXI output file <a href="/usr/opt/www/pub/CBS/services/MuPeXI-1.1/tmp/{}/{}">MuPeXI.out</a>\n'.format(dir_name, output)
+       print 'Link to MuPeXI log file <a href="/usr/opt/www/pub/CBS/services/MuPeXI-1.1/tmp/{}/{}">MuPeXI.log</a>\n'.format(dir_name, logfile)
        if not fasta_file_name == None:
-          print 'Link to Fasta file with peptide info <a href="/services/MuPeXI-1.1/tmp/{}/{}">Fasta file</a>\n'.format(dir_name, fasta_file_name)
+          print 'Link to Fasta file with peptide info <a href="/usr/opt/www/pub/CBS/services/MuPeXI-1.1/tmp/{}/{}">Fasta file</a>\n'.format(dir_name, fasta_file_name)
 
 
 
