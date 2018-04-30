@@ -414,7 +414,7 @@ def detect_variant_caller(vcf_file, webserver):
     print_ifnot_webserver('\tDetecting variant caller', webserver)
     with open(vcf_file) as f:
         for line in f.readlines():
-            if 'ID=MuTect2,' in line:
+            if any(ids in line for ids in ['ID=MuTect2,', 'ID=Mutect2,']):
                 variant_caller = 'MuTect2'
                 print_ifnot_webserver('\t\tMuTect2', webserver)
                 break

@@ -30,7 +30,7 @@ MuPeXI currently runs only on x86_64 machines running Linux or Darwin.
 
 #### Required software:
 * [Python 2.7](https://www.python.org/download/releases/2.7/)
-* [NetMHCpan 3.0](http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?netMHCpan)
+* [NetMHCpan 4.0](http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?netMHCpan)
 * [Variant Effect Predictor (VEP)](http://www.ensembl.org/info/docs/tools/vep/index.html) 
 
 #### Required Python modules:
@@ -59,7 +59,7 @@ files; see the References section in the [user manual](/doc/MuPeXI_User_Manual.m
 for a detailed description.
 
 4. Fill in the config.ini file  
-    * Provide the full path to NetMHCpan 3.0 and VEP.
+    * Provide the full path to NetMHCpan and VEP.
     * Provide the full path to the reference files:
         - cDNA
         - peptide
