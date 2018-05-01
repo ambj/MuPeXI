@@ -50,7 +50,7 @@ To run MuPeXI the following software and packages must be installed:
 
 #### Required software:
 * [Python 2.7](https://www.python.org/download/releases/2.7/)
-* [netMHCpan 3.0](http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?netMHCpan)
+* [netMHCpan 4.0](http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?netMHCpan)
 * [Varaint Effect Predictor (VEP)](http://www.ensembl.org/info/docs/tools/vep/index.html) 
 
 #### Python modules:
@@ -90,11 +90,11 @@ for a detailed description.
     is automatically detected in the same directory as `MuPeXI.py` script but can also be
     placed elsewhere and referred to by the `-c` option.
 
-    State the path to netMHCpan 3.0 and VEP in the config.ini file.
+    State the path to netMHCpan and VEP in the config.ini file.
 
         [netMHC]
-        # Please specify the netMHCpan 3.0 binary path
-        MHC = your/path/to/netMHCpan-3.0/netMHCpan
+        # Please specify the netMHCpan binary path
+        MHC = your/path/to/netMHCpan-4.0/netMHCpan
 
         [EnsemblVEP]
         # Please specify binary path to Ensembls Variant effect predictor (VEP), and the directory of containing the cache database. 
@@ -138,7 +138,7 @@ for a detailed description.
 ## Usage  
 
 After installation MuPeXI is called as follows. Here is an example where the reference
-files are stated in the config.ini file and netMHCpan-3.0 is run for the HLA types
+files are stated in the config.ini file and netMHCpan is run for the HLA types
 HLA-A01:01 and HLA-B08:01. The config file is specified using the `-c` option and the
 expression file with the `-e` option.
 
@@ -154,7 +154,6 @@ All options can be explored using the usage information with the `-h` option:
     > path/to/MuPeXI.py -h
 
         MuPeXI - Mutant Peptide Extractor and Informer
-        version 2016-08-11
 
         The current version of this program is available from
         https://github.com/ambj/MuPeXI
@@ -165,8 +164,8 @@ All options can be explored using the usage information with the `-h` option:
         predicting the immunogenicity of each peptide.
 
         Usage: ./MuPeXI.py -v <VCF-file> [options]
-
                                                                                     DEFAULT
+
         Required arguments:
         -v, --vcf-file <file>   VCF file of variant calls, preferably from
                                 MuTect (only SNVs) or MuTect2 (SNVs and indels)
@@ -177,6 +176,9 @@ All options can be explored using the usage information with the `-h` option:
                                 range (9-11) or comma separated (9,10,11).
         -e, --expression-file   Expression file, tab separated
                                 ((ENST*/ENSG*)   mean)
+        -E, --expression-type   Are the expression values in the expression         transcript
+                                files determined on transcript or gene level.
+                                (transcript/gene)
 
         Optional arguments affecting output files:
         -o, --output-file       Output file name.                                   <VEP-file>.mupexi
@@ -187,11 +189,15 @@ All options can be explored using the usage information with the `-h` option:
         -L, --log-file          Logfile name.                                       <VCF-file>.log
         -m, --mismatch-number   Maximum number of mismatches to search for in       4
                                 normal peptide match.
-        -a, --assembly          The assembly version to run VEP.                    GRCh38
-                
-        Optional arguments affecting computational process:
-        -F, --fork              Number of processors running VEP.                   1
+        -A, --assembly          The assembly version to run VEP.                    GRCh38
+        -s, --species           Species to analyze (human / mouse / mouse_black6 /  human
+                                mouse_balbc)
+                                If mouse is set default assembly is GRCm38.
+                                Remember to download the correct VEP cache
+                                and state species corresponding MHC alleles.
 
+        Optional arguments affecting computational process:
+        -F, --fork              Number of processors running VEP.                   2
         Other options (these do not take values)
         -f, --make-fasta        Create FASTA file with long peptides 
                                 - mutation in the middle
@@ -203,9 +209,10 @@ All options can be explored using the usage information with the `-h` option:
         -g, --liftover          Perform liftover HG19 to GRCh38.
                                 Requires local picard installation with paths
                                 stated in the config file
-        -E, --expression-type   Setting if the expression values in the expression  transcript
-                                files are determined on transcript or gene level.
-                                (transcript/gene)
+        -n, --netmhc-full-anal  Run NetMHCpan 4.0 with the full analysis including 
+                                both eluted ligand (EL) and binding affinity (BA) 
+                                prediction output (priority score calculated from 
+                                EL rank score)
         -h, --help              Print this help information
 
         REMEMBER to state references in the config.ini file
@@ -236,7 +243,7 @@ Compact example of a VCF file:
         chr1    3839305 rs1891940   T   C   .   clustered_events;germline_risk  . . . .
 
 A full example of a VCF file can be found on the MuPeXI webserver
-[here](http://www.cbs.dtu.dk/services/MuPeXI/example.vcf). 
+[here](http://www.cbs.dtu.dk/services/MuPeXI/files/example.vcf). 
 
 ### Expression file
 
@@ -244,7 +251,7 @@ It is optional, but preferable, to provide a file with expression values as inpu
 the expression of each transcript where a mutated peptide was extracted.
 The expression files used for testing MuPeXI were generated from raw RNA-seq data using
 Kallisto. The files should be tab separated and include Ensembl transcript ID (ENST) and
-mean expression WITHOUT a header. 
+mean expression. 
 
         ENST00000456328.2   0.868567715
         ENST00000450305.2   0
@@ -255,7 +262,7 @@ mean expression WITHOUT a header.
         ENST00000607096.1   0
 
 A full example of an expression file can be found on the MuPeXI webserver
-[here](http://www.cbs.dtu.dk/services/MuPeXI/example_expression.tsv).
+[here](http://www.cbs.dtu.dk/services/MuPeXI/files/example_expression.tsv).
 
 It should be noted that MuPeXI takes both expression values determined on transcript and
 gene level, though transcript is preferable. If gene level is used (ENSG...) the `-E gene`
