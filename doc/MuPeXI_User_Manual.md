@@ -291,20 +291,20 @@ The following reference are optional but preferable:
         downloaded from the [COSMIC](http://cancer.sanger.ac.uk/census) website.  
 
 #### Murine Specific References 
-We used the following murine specific references for our data analysis of BALBc and C57BL/6 mice strains. [ftp](ftp://ftp-mouse.sanger.ac.uk/current_snps/strain_specific_vcfs)
+We used the following murine specific references for our data analysis of BALBc and C57BL/6 mice strains. 
 
 | Reference for 	| Species     	| Description | Link |
 | -----------           | ----------- 	| ----------- | ----------- |
-| NGS Analysis 		| C57BL/6     	| SNP from Sanger mouse project | [ftp](ftp://ftp-mouse.sanger.ac.uk/current_snps/strain_specific_vcfs/) [file] (ftp://ftp-mouse.sanger.ac.uk/current_snps/strain_specific_vcfs/C57BL_6NJ.mgp.v5.snps.dbSNP142.vcf.gz) |
-| NGS Analysis  	| BALBc		| SNP from Sanger mouse project | [ftp](ftp://ftp-mouse.sanger.ac.uk/current_snps/strain_specific_vcfs/) [file](ftp://ftp-mouse.sanger.ac.uk/current_snps/strain_specific_vcfs/BALB_cJ.mgp.v5.snps.dbSNP142.vcf.gz) |
-| NGS Analysis          | C57BL/6       | Indels from Sanger mouse project | [ftp](ftp://ftp-mouse.sanger.ac.uk/current_snps/strain_specific_vcfs/) [file](ftp://ftp-mouse.sanger.ac.uk/current_snps/strain_specific_vcfs/C57BL_10J.mgp.v5.indels.dbSNP142.normed.vcf.gz) |
-| NGS Analysis          | BALBc       	| Indels from Sanger mouse project | [ftp]ftp://ftp-mouse.sanger.ac.uk/current_snps/strain_specific_vcfs/() [file](ftp://ftp-mouse.sanger.ac.uk/current_snps/strain_specific_vcfs/BALB_cJ.mgp.v5.indels.dbSNP142.normed.vcf.gz) |
-| NGS Analysis          | C57BL/6       | Ensembl genome DNA reference | [ftp](ftp://ftp.ensembl.org/pub/release-89/fasta/mus_musculus_c57bl6nj/dna/) |
-| NGS Analysis          | BALBc       | Ensembl genome DNA reference | [ftp](ftp://ftp.ensembl.org/pub/release-89/fasta/mus_musculus_balbcj/dna/) |
-| MuPeXI 		| C57BL/6 	| cDNA from Ensembl | [ftp](ftp://ftp.ensembl.org/pub/release-89/fasta/mus_musculus_c57bl6nj/cdna/) |
-| MuPeXI		| BALBc 	| cDNA from Ensembl | [ftp](ftp://ftp.ensembl.org/pub/release-89/fasta/mus_musculus_balbcj/cdna/) |
-| MuPeXI                | C57BL/6       | Peptide from Ensembl | [ftp](ftp://ftp.ensembl.org/pub/release-89/fasta/mus_musculus_c57bl6nj/pep/) |
-| MuPeXI                | BALBc         | Peptide from Ensembl | [ftp](ftp://ftp.ensembl.org/pub/release-89/fasta/mus_musculus_balbcj/pep/) |
+| NGS Analysis 		| C57BL/6     	| SNP from Sanger mouse project | ftp://ftp-mouse.sanger.ac.uk/current_snps/strain_specific_vcfs/C57BL_6NJ.mgp.v5.snps.dbSNP142.vcf.gz |
+| NGS Analysis  	| BALBc		| SNP from Sanger mouse project | ftp://ftp-mouse.sanger.ac.uk/current_snps/strain_specific_vcfs/BALB_cJ.mgp.v5.snps.dbSNP142.vcf.gz |
+| NGS Analysis          | C57BL/6       | Indels from Sanger mouse project | ftp://ftp-mouse.sanger.ac.uk/current_snps/strain_specific_vcfs/C57BL_10J.mgp.v5.indels.dbSNP142.normed.vcf.gz |
+| NGS Analysis          | BALBc       	| Indels from Sanger mouse project | ftp://ftp-mouse.sanger.ac.uk/current_snps/strain_specific_vcfs/BALB_cJ.mgp.v5.indels.dbSNP142.normed.vcf.gz |
+| NGS Analysis          | C57BL/6       | Ensembl genome DNA reference | ftp://ftp.ensembl.org/pub/release-89/fasta/mus_musculus_c57bl6nj/dna/ |
+| NGS Analysis          | BALBc       | Ensembl genome DNA reference | ftp://ftp.ensembl.org/pub/release-89/fasta/mus_musculus_balbcj/dna/ |
+| MuPeXI 		| C57BL/6 	| cDNA from Ensembl | ftp://ftp.ensembl.org/pub/release-89/fasta/mus_musculus_c57bl6nj/cdna/ |
+| MuPeXI		| BALBc 	| cDNA from Ensembl | ftp://ftp.ensembl.org/pub/release-89/fasta/mus_musculus_balbcj/cdna/ |
+| MuPeXI                | C57BL/6       | Peptide from Ensembl | ftp://ftp.ensembl.org/pub/release-89/fasta/mus_musculus_c57bl6nj/pep/ |
+| MuPeXI                | BALBc         | Peptide from Ensembl | ftp://ftp.ensembl.org/pub/release-89/fasta/mus_musculus_balbcj/pep/ |
 
 
 ## Output Files 
