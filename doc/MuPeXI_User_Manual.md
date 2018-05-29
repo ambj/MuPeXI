@@ -291,7 +291,7 @@ The following reference are optional but preferable:
         downloaded from the [COSMIC](http://cancer.sanger.ac.uk/census) website.  
 
 #### Murine Specific References 
-We used the following murine specific references for our data analysis of BALBc and C57BL/6 mice strains.[ftp](ftp://ftp-mouse.sanger.ac.uk/current_snps/strain_specific_vcfs/)
+We used the following murine specific references for our data analysis of BALBc and C57BL/6 mice strains. [ftp](ftp://ftp-mouse.sanger.ac.uk/current_snps/strain_specific_vcfs)
 
 | Reference for 	| Species     	| Description | Link |
 | -----------           | ----------- 	| ----------- | ----------- |
