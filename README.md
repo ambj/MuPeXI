@@ -24,7 +24,7 @@ You can read the paper here: http://rdcu.be/rwVP
 For limited data, MuPeXI can be run on our
 [web server](http://www.cbs.dtu.dk/services/MuPeXI/)
 
-A mouse specific [web server](http://www.cbs.dtu.dk/services/MuPeXI-mouse/)
+Mouse specific [web server](http://www.cbs.dtu.dk/services/MuPeXI-mouse/)
 
 ## Dependencies
 
