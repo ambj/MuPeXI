@@ -5,6 +5,8 @@ all mutated peptides (neo-peptides) of user-defined lengths, along with several 
 of information relevant for identifying which of these neo-peptides are likely to serve as
 neo-epitopes. 
 
+NEW: MuPeXI is now tested and compatible for suquencing data of murine origin.
+
 #### Authors: 
 Anne-Mette Bjerregaard and Aron C. Eklund 
 
@@ -18,10 +20,11 @@ Cancer Immunol Immunother. 2017 Apr 20. doi: 10.1007/s00262-017-2001-3. [Epub ah
 PubMed ID: [28429069](https://www.ncbi.nlm.nih.gov/pubmed/28429069)  
 You can read the paper here: http://rdcu.be/rwVP
 
-#### Web server:
+#### Web servers:
 For limited data, MuPeXI can be run on our
 [web server](http://www.cbs.dtu.dk/services/MuPeXI/)
 
+A mouse specific [web server](http://www.cbs.dtu.dk/services/MuPeXI-mouse/)
 
 ## Dependencies
 
