@@ -11,7 +11,7 @@ NEW: MuPeXI is now tested and compatible for suquencing data of murine origin.
 Anne-Mette Bjerregaard and Aron C. Eklund 
 
 #### License: 
-MuPeXi is freely available for academic users (see [License](/LICENSE)) ,  other users are requested to contact CBS Software Package Manager at software@cbs.dtu.dk.
+MuPeXI is freely available for academic users (see [License](/LICENSE)) ,  other users are requested to contact CBS Software Package Manager at software@cbs.dtu.dk.
 
 #### Citation:
 Bjerregaard AM, Nielsen M, Hadrup SR, Szallasi Z, Eklund AC.  
