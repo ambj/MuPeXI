@@ -11,12 +11,12 @@ NEW: MuPeXI is now tested and compatible for suquencing data of murine origin.
 Anne-Mette Bjerregaard and Aron C. Eklund 
 
 #### License: 
-To be determined, but certainly free for academic use.
+MuPeXi is freely available for academic users (see [License](/LICENSE)) ,  other users are requested to contact CBS Software Package Manager at software@cbs.dtu.dk.
 
 #### Citation:
 Bjerregaard AM, Nielsen M, Hadrup SR, Szallasi Z, Eklund AC.  
 MuPeXI: Prediction of neo-epitopes from tumor sequencing data.  
-Cancer Immunol Immunother. 2017 Apr 20. doi: 10.1007/s00262-017-2001-3. [Epub ahead of print]  
+Cancer Immunol Immunother. 2017 Apr 20. doi: 10.1007/s00262-017-2001-3.  
 PubMed ID: [28429069](https://www.ncbi.nlm.nih.gov/pubmed/28429069)  
 You can read the paper here: http://rdcu.be/rwVP
 
