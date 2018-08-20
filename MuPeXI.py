@@ -452,8 +452,12 @@ def liftover_hg19(liftover, webserver, vcf_file, keep_tmp, outdir, file_prefix, 
             'REFERENCE_SEQUENCE={}'.format(fasta_file)], 
             stdout = subprocess.PIPE,
             stderr = subprocess.PIPE)
-        p1.communicate()
+        output, error = p1.communicate()
         vcf_liftover_file.close()
+    
+        # Test if VEP file is empty 
+        if os.stat(vcf_liftover_file.name).st_size <= 23000 :
+            sys.exit('ERROR: Liftover non fuctioning \nLiftOver {}'.format(error))
 
         keep_temp_file(keep_tmp, 'vcf', vcf_liftover_file.name, file_prefix, outdir, None, 'vcf_liftover')
         keep_temp_file(keep_tmp, 'vcf', rejected_records_file.name, file_prefix, outdir, None, 'rejected_records_liftover')
