@@ -550,7 +550,10 @@ def run_vep(vcf_sorted_file, webserver, tmp_dir, vep_path, vep_dir, keep_tmp, fi
     
     # Test if VEP file is empty 
     if os.stat(vep_file.name).st_size == 0 :
-        sys.exit('ERROR: VEP output file empty\nVEP {}'.format(error))
+        print('\nERROR:\tVEP output file empty\nVEP:\t{}'.format(error))
+        if "use an undefined value as a symbol reference at" in error :
+            print "NOTE:\tCheck the VCF file have been generated with The GRCh38 assembly - or use the liftover option"
+        sys.exit()
 
     keep_temp_file(keep_tmp, 'vep', vep_file.name, file_prefix, outdir, None, 'vep')
 
