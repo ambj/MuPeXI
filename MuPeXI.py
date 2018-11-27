@@ -165,7 +165,7 @@ def config_parse(config_file, category, ID):
     # parse config file
     config = SafeConfigParser()
     config.read(config_file)
-    path = config.get(category, ID) if config.has_option(category, ID) else None
+    path = os.path.expandvars(config.get(category, ID)) if config.has_option(category, ID) else None
 
     return path
 
@@ -452,8 +452,12 @@ def liftover_hg19(liftover, webserver, vcf_file, keep_tmp, outdir, file_prefix, 
             'REFERENCE_SEQUENCE={}'.format(fasta_file)], 
             stdout = subprocess.PIPE,
             stderr = subprocess.PIPE)
-        p1.communicate()
+        output, error = p1.communicate()
         vcf_liftover_file.close()
+    
+        # Test if VEP file is empty 
+        if os.stat(vcf_liftover_file.name).st_size <= 23000 :
+            sys.exit('ERROR: Liftover non fuctioning \nLiftOver {}'.format(error))
 
         keep_temp_file(keep_tmp, 'vcf', vcf_liftover_file.name, file_prefix, outdir, None, 'vcf_liftover')
         keep_temp_file(keep_tmp, 'vcf', rejected_records_file.name, file_prefix, outdir, None, 'rejected_records_liftover')
@@ -546,7 +550,10 @@ def run_vep(vcf_sorted_file, webserver, tmp_dir, vep_path, vep_dir, keep_tmp, fi
     
     # Test if VEP file is empty 
     if os.stat(vep_file.name).st_size == 0 :
-        sys.exit('ERROR: VEP output file empty\nVEP {}'.format(error))
+        print('\nERROR:\tVEP output file empty\nVEP:\t{}'.format(error))
+        if "use an undefined value as a symbol reference at" in error :
+            print "NOTE:\tCheck the VCF file have been generated with The GRCh38 assembly - or use the liftover option"
+        sys.exit()
 
     keep_temp_file(keep_tmp, 'vep', vep_file.name, file_prefix, outdir, None, 'vep')
 
@@ -557,6 +564,7 @@ def run_vep(vcf_sorted_file, webserver, tmp_dir, vep_path, vep_dir, keep_tmp, fi
 def build_vep_info(vep_file, webserver):
     print_ifnot_webserver('\tCreating mutation information dictionary', webserver)
     vep_info = [] # empty list
+    previous_mutation_id = previous_mutation_id_vep = '' # empty string 
     # Creating named tuple 
     Mutation_Info = namedtuple('mutation_info', ['gene_id', 'trans_id', 'mutation_consequence','chr', 'pos', 'cdna_pos', 'prot_pos', 'prot_pos_to', 'aa_normal', 'aa_mut', 'codon_normal', 'codon_mut', 'alt_allele', 'symbol'])
     transcript_info = defaultdict(dict)
@@ -570,8 +578,12 @@ def build_vep_info(vep_file, webserver):
                 continue
             # Go to the next line if it is not a missense variant mutations
             mutation_consequence = ['missense_variant', 'inframe_insertion', 'inframe_deletion', 'frameshift_variant']
-            if not any(wanted_consequence in line for wanted_consequence in mutation_consequence) :
-                non_used_mutation_count += 1
+            mutation_id = line.split('\t')[0].strip()
+            if not any(wanted_consequence in line for wanted_consequence in mutation_consequence):
+                if not mutation_id == previous_mutation_id :
+                    non_used_mutation_count += 1
+                    # save previous mutation ID
+                    previous_mutation_id = mutation_id
                 continue
             if 'stop' in line:
                 continue
@@ -601,14 +613,17 @@ def build_vep_info(vep_file, webserver):
             vep_info.append(Mutation_Info(geneID, transID, mutation_consequence, chr_, genome_pos, cdna_pos, int(prot_pos), prot_pos_to, aa_normal, aa_mutation, codon_normal, codon_mut, alt_allele, symbol))
 
             # count independent mutation mutation consequences 
-            if mutation_consequence == 'missense_variant' :
+            if (not mutation_id_vep == previous_mutation_id_vep) and mutation_consequence == 'missense_variant' :
                 misssense_variant_count += 1
-            if mutation_consequence == 'inframe_insertion' :
+            if (not mutation_id_vep == previous_mutation_id_vep) and mutation_consequence == 'inframe_insertion' :
                 inframe_insertion_count += 1
-            if mutation_consequence == 'inframe_deletion' :
+            if (not mutation_id_vep == previous_mutation_id_vep) and mutation_consequence == 'inframe_deletion' :
                 inframe_deletion_count += 1
-            if mutation_consequence == 'frameshift_variant' :
+            if (not mutation_id_vep == previous_mutation_id_vep) and mutation_consequence == 'frameshift_variant' :
                 frameshift_variant_count += 1
+
+            # save previous mutation ID
+            previous_mutation_id_vep = mutation_id_vep
 
     if vep_info == [] :
         sys.exit('\nNO RELEVANT MUTATIONS (missense variant, inframe insertion / deletion or frameshift variant) found in VEP file.\nMuPeXI run stopped\nPrint temporary files to check if this is correct (option -t)\n')
@@ -1509,12 +1524,12 @@ def write_log_file(argv, peptide_length, sequence_count, reference_peptide_count
 
           Reading protein reference file:            Found {sequence_count} sequences, with {reference_peptide_count} {peptide_length}mers
                                                            of which {unique_reference_peptide_count} were unique peptides
-          Reading VEP file:                          Found {non_used_mutation_count} irrelevant mutation consequences which were discarded
+          Reading VEP file:                          Found {non_used_mutation_count} irrelevant (synonymous) mutation consequences which were discarded
                                                      Found {misssense_variant_count} missense variant mutation(s) 
                                                            {inframe_insertion_count} insertion(s)
                                                            {inframe_deletion_count} deletion(s)
                                                            {frameshift_variant_count} frameshift variant mutation(s)
-                                                     In {gene_count} genes and {transcript_Count} transcripts
+                                                     These non-synonymous mutations where found in {gene_count} genes and {transcript_Count} transcripts
           Checking peptides:                         {normal_match_count} peptides matched a normal peptide. 
                                                      {removal_count} peptides included unsupported symbols (e.g. *, X, U) and were discarded 
           Final Result:                              {peptide_count} potential mutant peptides

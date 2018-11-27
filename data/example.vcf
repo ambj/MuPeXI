@@ -34,8 +34,8 @@
 ##INFO=<ID=RU,Number=1,Type=String,Description="Tandem repeat unit (bases)">
 ##INFO=<ID=STR,Number=0,Type=Flag,Description="Variant is a short tandem repeat">
 ##INFO=<ID=TLOD,Number=1,Type=String,Description="Tumor LOD score">
-##SAMPLE=<ID=NORMAL,SampleName=_N,File=/home/projects/pr_46630/people/ambj/melanoma/TCGA/WXS/aligned_to_GRCh38/_N.recal_reads.RGorderen.bam>
-##SAMPLE=<ID=TUMOR,SampleName=_T,File=/home/projects/pr_46630/people/ambj/melanoma/TCGA/WXS/aligned_to_GRCh38/_T.recal_reads.RGorderen.bam>
+##SAMPLE=<ID=NORMAL,SampleName=_N,File=/home/projects/pr_46630/people/ambj/melanoma/WXS/aligned_to_GRCh38/_N.recal_reads.RGorderen.bam>
+##SAMPLE=<ID=TUMOR,SampleName=_T,File=/home/projects/pr_46630/people/ambj/melanoma/WXS/aligned_to_GRCh38/_T.recal_reads.RGorderen.bam>
 ##contig=<ID=chr1,length=248956422>
 ##contig=<ID=chr2,length=242193529>
 ##contig=<ID=chr3,length=198295559>
