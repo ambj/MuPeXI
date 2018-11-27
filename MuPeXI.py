@@ -584,7 +584,6 @@ def build_vep_info(vep_file, webserver):
                     non_used_mutation_count += 1
                     # save previous mutation ID
                     previous_mutation_id = mutation_id
-                    print('{}\t{}\t{}'.format(mutation_id, previous_mutation_id, non_used_mutation_count))
                 continue
             if 'stop' in line:
                 continue
@@ -622,16 +621,6 @@ def build_vep_info(vep_file, webserver):
                 inframe_deletion_count += 1
             if (not mutation_id_vep == previous_mutation_id_vep) and mutation_consequence == 'frameshift_variant' :
                 frameshift_variant_count += 1
-
-            # # count independent mutation mutation consequences 
-            # if mutation_consequence == 'missense_variant' :
-            #     misssense_variant_count += 1
-            # if mutation_consequence == 'inframe_insertion' :
-            #     inframe_insertion_count += 1
-            # if mutation_consequence == 'inframe_deletion' :
-            #     inframe_deletion_count += 1
-            # if mutation_consequence == 'frameshift_variant' :
-            #     frameshift_variant_count += 1
 
             # save previous mutation ID
             previous_mutation_id_vep = mutation_id_vep
