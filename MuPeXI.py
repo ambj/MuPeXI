@@ -165,7 +165,7 @@ def config_parse(config_file, category, ID):
     # parse config file
     config = SafeConfigParser()
     config.read(config_file)
-    path = config.get(category, ID) if config.has_option(category, ID) else None
+    path = os.path.expandvars(config.get(category, ID)) if config.has_option(category, ID) else None
 
     return path
 
