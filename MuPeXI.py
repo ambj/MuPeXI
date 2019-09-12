@@ -597,6 +597,9 @@ def build_vep_info(vep_file, webserver):
             prot_pos = line[9].strip()
             cdna_pos = line[7].strip()
             symbol = re.search(r'SYMBOL=(\d*\w*\d*\w*\d*\w*)', line[13]).group(1).strip() if not re.search(r'SYMBOL', line[13]) == None else '-'
+            if not '/' in line[10] :
+                # Can happen if aa goes from X to X (i.e. Mmus:11_60207188_C/- on e!97 ENSMUST00000134660.7, a truncated gene model)
+                continue
             aa_normal, aa_mutation = line[10].split('/')
             codon_normal, codon_mut = line[11].split('/')
             if '-' in line[9] :
